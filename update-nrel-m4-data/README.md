@@ -1,4 +1,6 @@
 # update-nrel-m4-data
+Routines to update local copies of M$ data from NREL
+
 Summary
 -------
 Routines to update local version of folder structure and .mat files from online
