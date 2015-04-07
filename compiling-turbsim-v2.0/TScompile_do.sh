@@ -3,27 +3,29 @@
 # Usage:
 # 		$ ./TScompile_do.sh <directory-name>
 #
-# Linux bash script to compile TurbSim:
+# Linux bash script to compile TurbSim v2.0:
 #		1) Compiles TurbSim, cleans up
 #		2) Makes TurbSim executable
 #		3) Moves file into /turbsim/
 #
 # Jenni Rinker, Duke University/NWTC
-# 24-Mar-2015
+# 07-Apr-2015
+
+echo "  Coptying makefile..."
+
+# copy makefile into trunk/compiling/
+cp Makefile ${1}/compiling/
 
 # move into build_structure
-cd ${1}/
+cd ${1}/compiling/
 
 echo "  Compiling TurbSim..."
 
 # compile turbsim, make it exectuable
-make turbsim
+make
 echo "  Cleaning..."
 make clean
 echo "  Making executable..."
-chmod +x TurbSim
-
-# rearrange /turbsim/, relocate to upper directory
-mv -f TurbSim turbsim/
+chmod +x ../bin/TurbSim_glin64
 
 echo "  Script complete."

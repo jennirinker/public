@@ -4,7 +4,7 @@
 # 		$ ./TScompile_setup.sh
 #
 # Linux bash script to set up source files/structure necessary for
-# TurbSim compilation. Script has four steps:
+# TurbSim v1.0 compilation. Script has four steps:
 #		1) Clear/create build structure folder
 #		2) Unzip source code/file structure to folder
 #		3) Apply patches for Linux compilation

@@ -1,5 +1,5 @@
-# compiling-turbsim
-Routines to compile TurbSim on Linux
+# compiling-turbsim-v1.0
+Routines to compile TurbSim v1.0 on Linux
 
 Summary
 -------
