@@ -16,7 +16,7 @@ been made to the TurbSim source code.
 Requirements
 ------------
 The LAPACK and BLAS packages must be installed. This can be easily done
-from the command line:
+from the command line:  
 `$ sudo apt-get install liblapack-dev`  
 `$ sudo apt-get install libblas-dev`  
 
@@ -24,8 +24,7 @@ Download the compressed TurbSim source code from the NWTC Information
 Portal:
  - [TurbSim v2.0](https://nwtc.nrel.gov/Alphas)  
 
-Put the TurbSim executable in a folder called src/ and place the Makefile
-in the top directory with the two bash scripts.
+Once this repository is cloned, put the TurbSim executable in src/.
 
 Usage
 -----
