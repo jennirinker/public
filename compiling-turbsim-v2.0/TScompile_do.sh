@@ -11,7 +11,7 @@
 # Jenni Rinker, Duke University/NWTC
 # 07-Apr-2015
 
-echo "  Coptying makefile..."
+echo "  Copying makefile..."
 
 # copy makefile into trunk/compiling/
 cp Makefile ${1}/compiling/
