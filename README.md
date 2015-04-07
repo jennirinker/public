@@ -8,7 +8,8 @@ distributed to the public.
 
 Contents
 --------
- - compiling-turbsim: code for compiling TurbSim on Linux
+ - compiling-turbsim-v1.0: code for compiling TurbSim v1.0 on Linux
+ - compiling-turbsim-v2.0: code for compiling TurbSim v2.0 on Linux
  - update-nrel-m4-data: code to update local copies of M4
  data from NREL 
 
