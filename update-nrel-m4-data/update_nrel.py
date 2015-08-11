@@ -7,24 +7,24 @@ if (__name__ == '__main__'):
     # 20-Hz base URL and directory
     #   *** NO TRAILING SLASHES ***
     baseURL = 'http://wind.nrel.gov/MetData/' + \
-        '135mData/M4Twr/20Hz/mat';
-    basedir = 'G:\\data\\nrel-20Hz';
+        '135mData/M4Twr/20Hz/mat'
+    basedir = 'G:\\data\\nrel-20Hz'
 
     # 10-min base URL and directory
     #   *** NO TRAILING SLASHES ***
 ##    baseURL = 'http://wind.nrel.gov/MetData/' + \
-##        '135mData/M4Twr/10min/mat';
-##    basedir = 'G:\\data\\nrel-10min';
+##        '135mData/M4Twr/10min/mat'
+##    basedir = 'G:\\data\\nrel-10min'
 
     # update the directory, return list of err'd files
-    errList = updateDirectory(baseURL,basedir);
+    errList = updateDirectory(baseURL,basedir)
 
     # print a comment if any errors
     if errList:
-        print '\n{} file(s) '.format(len(errList)) \
-            + 'with errors saved in errList.';
+        print('\n{} file(s) '.format(len(errList)) \
+            + 'with errors saved in errList.')
 
     # and that's it!
-    print '\nScript complete.\n';
+    print('\nScript complete.\n')
 
     
