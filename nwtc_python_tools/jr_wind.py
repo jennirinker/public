@@ -9,7 +9,7 @@ Contact: jennifer.rinker@duke.edu
 TODO ********************
     - Rewrite GetFirstWind so it does not depend on PyTurbSim
 """
-import pyts.io.main as io
+# import pyts.io.main as io
 
 def GetFirstWind(wind_fpath):
     """ First wind speed from file

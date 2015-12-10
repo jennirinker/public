@@ -2,7 +2,6 @@
 Demonstration of Python tools for working with NWTC CAE tools:
     1) Create turbine dictionary from FAST file
     2) Write turbine-specific .fst template
-    3) Wrtte 
 """
 import jr_fast,os
 
