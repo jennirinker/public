@@ -1,25 +1,25 @@
 --------------------------------------------------------------------------------
 ---------------------- FAST TOWER FILE -----------------------------------------
-{:s}
+{:s}	TwrCmnt
 ---------------------- TOWER PARAMETERS ----------------------------------------
 {:4.0f}        NTwInpSt    - Number of input stations to specify tower geometry
-False       CalcTMode   - Calculate tower mode shapes internally {T: ignore mode shapes from below, F: use mode shapes from below} [CURRENTLY IGNORED] (flag)
+{:5s}       CalcTMode   - Calculate tower mode shapes internally {T: ignore mode shapes from below, F: use mode shapes from below} [CURRENTLY IGNORED] (flag)
 {:8.3f}    TwrFADmp(1) - Tower 1st fore-aft mode structural damping ratio (%)
 {:8.3f}    TwrFADmp(2) - Tower 2nd fore-aft mode structural damping ratio (%)
 {:8.3f}    TwrSSDmp(1) - Tower 1st side-to-side mode structural damping ratio (%)
 {:8.3f}    TwrSSDmp(2) - Tower 2nd side-to-side mode structural damping ratio (%)
 ---------------------- TOWER ADJUSTMUNT FACTORS --------------------------------
-   1.0      FAStTunr(1) - Tower fore-aft modal stiffness tuner, 1st mode (-)
-   1.0      FAStTunr(2) - Tower fore-aft modal stiffness tuner, 2nd mode (-)
-   1.0      SSStTunr(1) - Tower side-to-side stiffness tuner, 1st mode (-)
-   1.0      SSStTunr(2) - Tower side-to-side stiffness tuner, 2nd mode (-)
-   1.0      AdjTwMa     - Factor to adjust tower mass density (-)
-   1.0      AdjFASt     - Factor to adjust tower fore-aft stiffness (-)
-   1.0      AdjSSSt     - Factor to adjust tower side-to-side stiffness (-)
+{:6.1f}      FAStTunr(1) - Tower fore-aft modal stiffness tuner, 1st mode (-)
+{:6.1f}      FAStTunr(2) - Tower fore-aft modal stiffness tuner, 2nd mode (-)
+{:6.1f}      SSStTunr(1) - Tower side-to-side stiffness tuner, 1st mode (-)
+{:6.1f}      SSStTunr(2) - Tower side-to-side stiffness tuner, 2nd mode (-)
+{:6.1f}      AdjTwMa     - Factor to adjust tower mass density (-)
+{:6.1f}      AdjFASt     - Factor to adjust tower fore-aft stiffness (-)
+{:6.1f}      AdjSSSt     - Factor to adjust tower side-to-side stiffness (-)
 ---------------------- DISTRIBUTED TOWER PROPERTIES ----------------------------
 HtFract  TMassDen  TwFAStif    TwSSStif    TwGJStif    TwEAStif   TwFAIner  TwSSIner  TwFAcgOf  TwSScgOf
 (-)      (kg/m)    (Nm^2)      (Nm^2)      (Nm^2)      (N)        (kg m)    (kg m)    (m)       (m)
-{:7.5f}{:10.3f}{:12.3e}{:12.3e}{:12.3e}{:12.3e}
+{:7.5f}{:10.3f}{:12.3e}{:12.3e}{:12.3e}{:12.3e}	TwrSched
 ---------------------- TOWER FORE-AFT MODE SHAPES ------------------------------
 {:9.4f}   TwFAM1Sh(2) - Mode 1, coefficient of x^2 term
 {:9.4f}   TwFAM1Sh(3) -       , coefficient of x^3 term

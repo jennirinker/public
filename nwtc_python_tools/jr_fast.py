@@ -19,8 +19,10 @@ NOTES:
 
 ===============================================================================
 """
+
+# module dependencies
 import jr_wind
-import os
+import os, sys, json, re
 import scipy.io as scio
 import numpy as np
 
@@ -154,14 +156,15 @@ def WriteFAST7InputsOne(tmpl_dir,turb_name,wind_fname,
                 
     return
     
-def CreateFAST7Dict(fast_fpath):
+def CreateFAST7Dict(fast_fpath,
+                    save=0,save_dir='.'):
     """ Build and save FAST 7 Python dictionary from input file
     
         Args:
             fast_fpath (string): path to .fst file
             
         Returns:
-            turb_dict (dictionary): dictionary of turbine parameters
+            TurbDict (dictionary): dictionary of turbine parameters
     """
     
     # ensure path is to a .fst file 
@@ -173,27 +176,36 @@ def CreateFAST7Dict(fast_fpath):
     turb_dir   = os.path.dirname(fast_fpath)
     fast_fname = os.path.basename(fast_fpath)
     
+    print('\nCreating FAST 7 dictionary...')
+    print('  FAST 7 file: {:s}'.format(fast_fname))
+    print('  Directory:   {:s}\n'.format(turb_dir))
+    
     # change to turbine directory, keep current directory
     old_dir = os.getcwd()
     os.chdir(turb_dir)
     
     # ====================== initialize dictionary ============================
-    turb_dict = {}
-    turb_dict['TurbName'] = fast_fname[:-4]
-    turb_dict['TurbDir']  = turb_dir
+    TurbDict = {}
+    TurbDict['TurbName'] = fast_fname[:-4]
+    TurbDict['TurbDir']  = turb_dir
+    
+    print('\n  Processing files...')
         
     # ==================== read data from .fst file ===========================
+        
+    sys.stdout.write('    FAST file:     {:s}...'.format(fast_fname))
+    
     with open(fast_fname,'r') as f:
         
         # read first four lines manually
         f.readline()
         f.readline()
-        turb_dict['FstCmt1'] = f.readline().rstrip('\n')
-        turb_dict['FstCmt2'] = f.readline().rstrip('\n')
+        TurbDict['FASTCmnt1'] = f.readline().rstrip('\n')
+        TurbDict['FASTCmnt2'] = f.readline().rstrip('\n')
         
-        # read up to OutList automatically
-        value = ''
-        while ( value != 'OutList'):
+        # read through BldGagNd automatically
+        key = ''
+        while ( key != 'BldGagNd'):
             line = f.readline()
             
             # if line doesn't start with dashes, it is a parameter
@@ -201,29 +213,40 @@ def CreateFAST7Dict(fast_fpath):
                 # convert to float if number
                 try:
                     value = float(line.split()[0])
-                # otherwise remove quotes if present
+                # otherwise it's a string; remove quotes if present
                 except ValueError:
                     value = line.split()[0].rstrip('\"').lstrip('\"')
                 key   = line.split()[1]
-                turb_dict[key] = value
+                TurbDict[key] = value
 
         # read OutList automatically but save differently than above
         OutList = []
+        line = f.readline()             # skip line with "OutList"
         line = f.readline()
-        while ( line[:3] != 'END' ):
-            OutList.append(line)
-            line = f.readline()
-        turb_dict['OutList'] = OutList
+        end  = 0
+        while not end:
+            if (line[:3] == 'END'):
+                end = 1
+            else:
+                OutList.append(line)
+                line = f.readline()
+        TurbDict['OutList'] = OutList
         
+    sys.stdout.write('processed.\n')
+            
     # ============== read data from platform file if used =====================
-    if turb_dict['PtfmModel']:
-        with open(turb_dict['PtfmFile'],'r') as f:
+    if TurbDict['PtfmModel']:
+        
+        sys.stdout.write('    Platform file:' + \
+                                ' {:s}...'.format(TurbDict['PtfmFile']))
+    
+        with open(TurbDict['PtfmFile'],'r') as f:
             
             # read first four lines manually
             f.readline()
             f.readline()
             line = f.readline().rstrip('\n')
-            turb_dict['PtfmCmt'] = line
+            TurbDict['PtfmCmnt'] = line
             
             # read remaining lines automatically
             line = f.readline().rstrip('\n')
@@ -238,18 +261,24 @@ def CreateFAST7Dict(fast_fpath):
                     except ValueError:
                         value = line.split()[0].rstrip('\"').lstrip('\"')
                     key   = line.split()[1]
-                    turb_dict[key] = value
+                    TurbDict[key] = value
                 
                 line = f.readline().rstrip('\n')
-         
+                
+        sys.stdout.write('processed.\n')
+            
     # =================== read data from tower file ===========================
-    with open(turb_dict['TwrFile'],'r') as f:
+         
+    sys.stdout.write('    Tower ' + \
+                        'file:    {:s}...'.format(TurbDict['TwrFile']))
+             
+    with open(TurbDict['TwrFile'],'r') as f:
         
         # read first four lines manually
         f.readline()
         f.readline()
         line = f.readline().rstrip('\n')
-        turb_dict['TwrCmt'] = line
+        TurbDict['TwrCmnt'] = line
         
         # read to HtFract automatically
         value = ''
@@ -265,15 +294,15 @@ def CreateFAST7Dict(fast_fpath):
                 except ValueError:
                     value = line.split()[0].rstrip('\"').lstrip('\"')
                 key   = line.split()[1]
-                turb_dict[key] = value
+                TurbDict[key] = value
         f.readline()
         
         # read distributed tower properties
         twr_prop = []
-        for i_st in range(int(turb_dict['NTwInpSt'])):
+        for i_st in range(int(TurbDict['NTwInpSt'])):
             line = f.readline()
             twr_prop.append([float(s) for s in line.rstrip('\n').split()])
-        turb_dict['TwrDistProp'] = twr_prop
+        TurbDict['TwrSched'] = twr_prop
         
         # read remaining lines automatically
         line = f.readline().rstrip('\n')
@@ -288,20 +317,25 @@ def CreateFAST7Dict(fast_fpath):
                 except ValueError:
                     value = line.split()[0].rstrip('\"').lstrip('\"')
                 key   = line.split()[1]
-                turb_dict[key] = value
+                TurbDict[key] = value
             
             line = f.readline().rstrip('\n')  
             
-        
+    sys.stdout.write('processed.\n')
+                    
     # =============== read data from furling file if used =====================
-    if ( turb_dict['Furling'] == 'True' ):
-        with open(turb_dict['FurlFile'],'r') as f:
+    if ( TurbDict['Furling'] == 'True' ):
+        
+        sys.stdout.write('    Furling ' + \
+                        'file:  {:s}...'.format(TurbDict['FurlFile']))
+             
+        with open(TurbDict['FurlFile'],'r') as f:
             
             # read first four lines manually
             f.readline()
             f.readline()
             line = f.readline().rstrip('\n')
-            turb_dict['FurlCmt'] = line
+            TurbDict['FurlCmnt'] = line
             
             # read remaining lines automatically
             line = f.readline().rstrip('\n')
@@ -316,24 +350,30 @@ def CreateFAST7Dict(fast_fpath):
                     except ValueError:
                         value = line.split()[0].rstrip('\"').lstrip('\"')
                     key   = line.split()[1]
-                    turb_dict[key] = value
+                    TurbDict[key] = value
                 
                 line = f.readline().rstrip('\n')
                 
-    # =================== read data from blade files ===========================
-    for i_bl in range(1,int(turb_dict['NumBl'])+1):
+        sys.stdout.write('processed.\n')
+            
+    # =================== read data from blade files ==========================
+                
+    for i_bl in range(1,int(TurbDict['NumBl'])+1):
         
-        # append blade number to all blade keys to differentiate
-        bl_str = '_' + str(i_bl)
+        # blade-specific keys
+        bl_str = '_' + str(i_bl)                    # append '_x' to keys
+        bl_key = 'BldFile({:d})'.format(i_bl)       # blade file key
         
-        bl_key = 'BldFile({:d})'.format(i_bl)
-        with open(turb_dict[bl_key],'r') as f:
+        sys.stdout.write('    Blade {:d} '.format(i_bl) + \
+                        'file:  {:s}...'.format(TurbDict[bl_key]))
+                     
+        with open(TurbDict[bl_key],'r') as f:
             
             # read first four lines manually
             f.readline()
             f.readline()
             line = f.readline().rstrip('\n')
-            turb_dict['BlCmt' + bl_str] = line
+            TurbDict['BldCmnt' + bl_str] = line
             
             # read to BlFract automatically
             value = ''
@@ -349,15 +389,15 @@ def CreateFAST7Dict(fast_fpath):
                     except ValueError:
                         value = line.split()[0].rstrip('\"').lstrip('\"')
                     key   = line.split()[1] + bl_str
-                    turb_dict[key] = value
+                    TurbDict[key] = value
             f.readline()
             
-            # read distributed tower properties
-            bld_prop = []
-            for i_st in range(int(turb_dict['NBlInpSt' + bl_str])):
+            # read distributed blade properties
+            BldSched = []
+            for i_st in range(int(TurbDict['NBlInpSt' + bl_str])):
                 line = f.readline()
-                bld_prop.append([float(s) for s in line.rstrip('\n').split()])
-            turb_dict['BldDistProp' + bl_str] = twr_prop
+                BldSched.append([float(s) for s in line.rstrip('\n').split()])
+            TurbDict['BldSched' + bl_str] = BldSched
             
             # read remaining lines automatically
             line = f.readline().rstrip('\n')
@@ -372,17 +412,22 @@ def CreateFAST7Dict(fast_fpath):
                     except ValueError:
                         value = line.split()[0].rstrip('\"').lstrip('\"')
                     key   = line.split()[1] + bl_str
-                    turb_dict[key] = value
+                    TurbDict[key] = value
                 
                 line = f.readline().rstrip('\n') 
-                
+               
+        sys.stdout.write('processed.\n')
+             
+    # =================== read data from AeroDyn file =========================
         
-    # =================== read data from AeroDyn file ===========================
-    with open(turb_dict['ADFile'],'r') as f:
+    sys.stdout.write('    AeroDyn ' + \
+                        'file:  {:s}...'.format(TurbDict['ADFile']))
+             
+    with open(TurbDict['ADFile'],'r') as f:
         
         # read first line manually
         line = f.readline().rstrip('\n')
-        turb_dict['ADCmt'] = line
+        TurbDict['ADCmnt'] = line
         
         # read to NumFoil automatically
         key = ''
@@ -398,14 +443,14 @@ def CreateFAST7Dict(fast_fpath):
                 except ValueError:
                     value = line.split()[0].rstrip('\"').lstrip('\"')
                 key   = line.split()[1]
-                turb_dict[key] = value
+                TurbDict[key] = value
         
         # read foil files
         foil_prop = []
-        for i_st in range(int(turb_dict['NumFoil'])):
+        for i_st in range(int(TurbDict['NumFoil'])):
             line = f.readline().split()[0].lstrip('\"').rstrip('\"\n')
             foil_prop.append(line)
-        turb_dict['ADFoils'] = foil_prop
+        TurbDict['FoilNm'] = foil_prop
         
         # read number of blade nodes
         line = f.readline()     
@@ -416,12 +461,12 @@ def CreateFAST7Dict(fast_fpath):
         except ValueError:
             value = line.split()[0].rstrip('\"').lstrip('\"') 
         key   = line.split()[1]
-        turb_dict[key] = value
+        TurbDict[key] = value
         f.readline()
         
         # read blade nodes
         AD_prop = []
-        for i_bl in range(int(turb_dict['BldNodes'])):
+        for i_bl in range(int(TurbDict['BldNodes'])):
             line = f.readline().rstrip('\n').split()
             row = []
             for i_col in range(len(line)):
@@ -430,17 +475,62 @@ def CreateFAST7Dict(fast_fpath):
                 except ValueError:
                     row.append(line[i_col])
             AD_prop.append(row)
-        turb_dict['ADDistProp'] = AD_prop
+        TurbDict['ADSched'] = AD_prop
         
-    # TO FINISH: load data from noise file, linearization file, ADAMS file
+    sys.stdout.write('processed.\n')
+                    
+    # =============== read data from pitch file if used =====================
+    if ( TurbDict['PCMode'] == 1):
         
+        TurbDict['PitchFile'] = 'pitch.ipt'
+        
+        sys.stdout.write('    Pitch ' + \
+                        'file:    pitch.ipt...')
+             
+        with open('pitch.ipt','r') as f:
+            
+            # read first line manually
+            line = f.readline().rstrip('\n')
+            TurbDict['PitchCmnt'] = line
+            
+            # read through CNSTN(11) automatically
+            key = ''
+            while ( key != 'CNST(11)'):
+                line = f.readline()
+                value = float(line.split()[0])
+                key   = line.split()[1]
+                TurbDict[key] = value
+            f.readline()                # skip empty line
+            
+            # read transfer functions manually
+            TFNames = ['RPM2PI','RPM2P','TA2P','P2P']
+            for i_tf in range(len(TFNames)):
+                TF = TFNames[i_tf]
+                Order = int(f.readline().split()[0])
+                NumCoeffs = [float(x) for x in f.readline().split('Numerator')[0].split()]
+                DenCoeffs = [float(x) for x in f.readline().split('Denominator')[0].split()]
+                TurbDict[TF+'_Order'] = Order
+                TurbDict[TF+'_Num']  = NumCoeffs
+                TurbDict[TF+'_Den']  = DenCoeffs
+                f.readline()                # skip empty line
+                                    
+        sys.stdout.write('processed.\n')
+            
+# TODO: load data from noise file, linearization file, ADAMS file
+                
     # change back to original working directory
     os.chdir(old_dir)
     
-    return turb_dict
+    # save dictionary if requested
+    if save:
+        fpath_save = os.path.join(save_dir,TurbDict['TurbName']+'_Dict.dat')
+        with open(fpath_save,'w') as fsave:
+            json.dump(TurbDict,fsave)
+        print('\nTurbDict saved to {:s}'.format(fpath_save))    
     
-def WriteFASTTemplate(dir_out,TurbDict,
-                      Comment=None):
+    return TurbDict
+    
+def WriteFAST7Template(dir_out,TurbDict):
     """ Create turbine-specific FAST v7.02 template file.
         Template can then be used to write wind-file-specic .fst files.
     
@@ -451,71 +541,57 @@ def WriteFASTTemplate(dir_out,TurbDict,
         
     """
 
-    # create header strings if not given
     turb_name     = TurbDict['TurbName']
-    if not Comment:
-        Comment = ['FAST v7.02 input file for turbine \"{:s}\"'.format(turb_name), \
-                'Using code generated by Jennifer Rinker (Duke University)' ]
-                    
+    sys.stdout.write('\nWriting FAST 7 template for turbine {:s}...'.format(turb_name))
+                        
     # define path to base template and output filename
     fpath_temp = os.path.join('templates','Template.fst')
     fpath_out  = os.path.join(dir_out,turb_name+'_template.fst')
     
     # get list of keys to skip (they depend on wind file)
-    skip_keys = ['BlPitch(1)','BlPitch(2)','BlPitch(3)','OoPDefl','IPDefl',
-                 'RotSpeed','TTDspFA','TTDspSS']
+    windfile_keys = ['TMax',
+                 'BlPitch(1)','BlPitch(2)','BlPitch(3)',
+                 'OoPDefl','IPDefl','TeetDefl','Azimuth',
+                 'RotSpeed','NacYaw','TTDspFA','TTDspSS']
                     
     # open base template file and file to write to (turbine-specific template)
-    DictFields = TurbDict.keys()
     with open(fpath_temp,'r') as f_temp:
         with open(fpath_out,'w') as f_write:
             
             # read each line in template file
-            i_line = 0
             for r_line in f_temp:
                 
-                # print comment lines
-                if (i_line == 2):
-                    w_line = r_line.format(Comment[0])
-                    f_write.write(w_line)
-                elif (i_line == 3):
-                    w_line = r_line.format(Comment[1])
-                    f_write.write(w_line)
-                    
+                # default to copying without modification
+                w_line = r_line
+                                                        
                 # if line has a write-able field
-                elif ('{:' in r_line):
+                if ('{:' in r_line):
+                    
+                    # get fieldname, format for value, and remaining string
                     field = r_line.split()[1]
+                    value_format = r_line.split(field)[0]
+                    comment      = r_line.split(field)[-1]
                     
-                    # if key is not to be skipped
-                    if (field not in skip_keys):
+                    # check if comment line
+                    if ('FASTCmnt' in field):
+                        w_line = TurbDict[field] + '\n'
+                        
+                    # check if OutList
+                    elif (field == 'OutList'):
+                        for i_line in range(len(TurbDict['OutList'])-1):
+                            f_write.write(TurbDict['OutList'][i_line])
+                            w_line = TurbDict['OutList'][-1]
                     
-                        # try to load value from turbine dictionary
-                        try:
-                            w_line = r_line.format(TurbDict[field])
-                            
-                        # if key isn't present, see if it's a subkey or 
-                        #    if it's an unused filename
-                        except KeyError:
-                            
-                            # check subkey
-                            subkey = [sk for sk in DictFields if sk in field] 
-                            if subkey:
-                                w_line = r_line.format(TurbDict[subkey[0]])
-                                
-                            # check if it's an unused file
-                            elif (('File' in field) and (field != 'ADFile')):
-                                w_line = r_line.format('unused')
-                                
-                    else:
-                        w_line = r_line
-                            
-                    f_write.write(w_line)
+                    # otherwise, if key is not to be skipped
+                    elif (field not in windfile_keys):
+# TODO: add try/except to load default value if field not in dictionary
+                        value  = TurbDict[field]
+                        w_line = field.join([value_format.format(value),
+                                            comment])
                     
-                # copy all other lines without modification
-                else:
-                    w_line = r_line
-                    f_write.write(w_line)
-                i_line += 1   
+                f_write.write(w_line)
+               
+    print('done.')
     
     return
 
@@ -523,81 +599,261 @@ def WriteFASTTemplate(dir_out,TurbDict,
 def WriteAeroDynTemplate(dir_out,TurbDict):
     """ AeroDyn input file for FAST v7.02
     """
-    
-    # calculate file-specific vales
-    TurbName       = TurbDict['TurbName']
-    Comment1       = 'AeroDyn v13.00 file for turbine ' + \
-                        '\"{:s}\" (JRinker, Duke University)'.format(TurbName)
-    WindHH         = TurbDict['TowerHt'] + TurbDict['Twr2Shft'] + \
-                        TurbDict['OverHang']*np.sin(TurbDict['ShftTilt']*np.pi/180.)
-    NumFoil        = len(TurbDict['FoilNm'])
-    
+        
+    TurbName     = TurbDict['TurbName']
+    sys.stdout.write('\nWriting AeroDyn v13 template for turbine {:s}...'.format(TurbName))
+                        
     # define path to base template and output filename
-    fpath_temp = os.path.join('templates','Template.fst')
-    fpath_out  = os.path.join(dir_out,TurbName+'_template.fst')
+    fpath_temp = os.path.join('templates','Template_AD.ipt')
+    fpath_out  = os.path.join(dir_out,TurbName+'_AD_template.ipt')
     
     # open template file and file to write to
     with open(fpath_temp,'r') as f_temp:
         with open(fpath_out,'w') as f_write:
-            i_line = 0
             
             # read each line in template file
             for r_line in f_temp:
                 
-                # print comment lines
-                if (i_line == 0):
-                    w_line = r_line.format(Comment1)
-                    f_write.write(w_line)
+                # default to copying without modification
+                w_line = r_line
+                                                        
+                # if line has a write-able field
+                if ('{:' in r_line):
                     
-                # print key to line if number identifier present
-                elif ('{:' in r_line):
+                    # get fieldname, format for value, and remaining string
                     field = r_line.split()[1]
+                    value_format = r_line.split(field)[0]
+                    comment      = r_line.split(field)[-1]
                     
-                    # special checks for some fields
-                    if (field == 'FoilNm'):
-                        AF_fname = TurbDict[field][0]+'.dat'
-                        AF_fpath = os.path.join('AeroData',AF_fname)
-                        w_line = r_line.format(AF_fpath)
-                        f_write.write(w_line)
-                        for i_foil in range(1,NumFoil):
-                            AF_fname = TurbDict[field][i_foil]+'.dat'
-                            AF_fpath = os.path.join('AeroData',AF_fname)
-                            w_line = '\"{:s}\"\n'.format(AF_fpath)
-                            f_write.write(w_line)
-                            
-                    elif (field == 'BldNodes'):
-                        w_line = r_line.format(TurbDict[field])
-                        f_write.write(w_line)
-                        f_write.write('RNodes    AeroTwst  ' + \
-                                        'DRNodes  Chord  NFoil  PrnElm\n')
-                        for i_ADnode in range(int(TurbDict[field])):
-                            w_line = '{:8.5f}{:7.2f}{:12.5f}{:7.3f}{:3.0f}'.format( \
-                                        *TurbDict['ADSched'][i_ADnode]) \
-                                        + '      NOPRINT\n'
-                            f_write.write(w_line)
-                        return
-                            
-                    else:
-                    
-                        # try to load value from turbine dictionary
-                        try:
-                            w_line = r_line.format(TurbDict[field])
-                            
-                        # if key isn't present, check a few conditions
-                        except KeyError:
-                            if (field == 'HH'):
-                                w_line = r_line.format(WindHH)
-                            elif (field == 'NumFoil'):
-                                w_line = r_line.format(NumFoil)
-                            else:
-                                w_line = r_line
+                    # check if comment line
+                    if ('ADCmnt' in field):
+                        w_line = TurbDict[field] + '\n'
                         
-                        f_write.write(w_line)
+                    # if foilnames, print them all
+                    elif (field == 'FoilNm'):
+                        FoilNames = TurbDict[field]
+                        
+                        # print first foilname manually
+                        w_line    = field.join([value_format.format(FoilNames[0]),
+                                            comment])
+                        f_write.write(w_line)        
+                        
+                        # loop through remaining airfoils
+                        for i_line in range(1,len(TurbDict['FoilNm'])):
+                            f_write.write(FoilNames[i_line] + '\n')
+                        w_line = ''
+                        
+                    # if foilnames, print them all
+                    elif (field == 'ADSched'):      
+                        
+                        # loop through remaining airfoils
+                        for i_line in range(0,len(TurbDict['ADSched'])):
+                            w_line = value_format.format( \
+                                        *TurbDict['ADSched'][i_line])
+                            f_write.write(w_line + '\n')
+                        w_line = ''
                     
-                # copy all other lines without modification
-                else:
-                    w_line = r_line
-                    f_write.write(w_line)
-                i_line += 1  
+                    # otherwise, print key normally
+                    else:
+# TODO: add try/except to load default value if field not in dictionary
+                        value  = TurbDict[field]
+                        w_line = field.join([value_format.format(value),
+                                            comment])
+                    
+                f_write.write(w_line)
+                
+    print('done.')
     
+    return
+
+
+def WriteBladeFiles(dir_out,TurbDict):
+    """ Blade input files for FAST v7.02
+    """
+        
+    TurbName     = TurbDict['TurbName']
+    print('\nWriting FAST v7.02 blade files for turbine {:s}...'.format(TurbName))
+                        
+    # define path to base template
+    fpath_temp = os.path.join('templates','Template_Blade.dat')
+    
+    # loop through blades
+    for i_bl in range(1,int(TurbDict['NumBl'])+1):
+        
+        sys.stdout.write('  Blade {:d}...'.format(i_bl))
+    
+        # get output paths and string appender for blade
+        fname_out = TurbDict['BldFile({:d})'.format(i_bl)]
+        fpath_out = os.path.join(dir_out,fname_out)
+        bld_str   = '_{:d}'.format(i_bl)
+    
+        # open template file and file to write to
+        with open(fpath_temp,'r') as f_temp:
+            with open(fpath_out,'w') as f_write:
+                
+                # read each line in template file
+                for r_line in f_temp:
+                    
+                    # default to copying without modification
+                    w_line = r_line
+                                                            
+                    # if line has a write-able field
+                    if ('{:' in r_line):
+                        
+                        # get fieldname, format for value, and remaining string
+                        field = r_line.split()[1]
+                        value_format = r_line.split(field)[0]
+                        comment      = r_line.split(field)[-1]
+                        
+                        # check if comment line
+                        if ('BldCmnt' in field):
+                            w_line = TurbDict[field + bld_str] + '\n'
+                                                    
+                        # if blade schedule
+                        elif (field == 'BldSched'):
+                            
+                            BldSched = TurbDict['BldSched' + bld_str]
+                            
+                            # loop blade schedule
+                            for i_line in range(len(BldSched)):
+                                w_line = value_format.format( \
+                                            *BldSched[i_line])
+                                f_write.write(w_line + '\n')
+                            w_line = ''
+                        
+                        # otherwise, print key normally
+                        else:
+    # TODO: add try/except to load default value if field not in dictionary
+                            value  = TurbDict[field + bld_str]
+                            w_line = field.join([value_format.format(value),
+                                                comment])
+                        
+                    f_write.write(w_line)
+                    
+            sys.stdout.write('done.\n')
+    
+    return
+
+
+def WriteTowerFile(dir_out,TurbDict):
+    """ Tower input files for FAST v7.02
+    """
+        
+    TurbName     = TurbDict['TurbName']
+    sys.stdout.write('\nWriting FAST v7.02 tower file for turbine {:s}...'.format(TurbName))
+                        
+    # define path to base template and output file
+    fpath_temp = os.path.join('templates','Template_Tower.dat')
+    fname_out = TurbDict['TwrFile']
+    fpath_out = os.path.join(dir_out,fname_out)
+    
+    # open template file and file to write to
+    with open(fpath_temp,'r') as f_temp:
+        with open(fpath_out,'w') as f_write:
+            
+            # read each line in template file
+            for r_line in f_temp:
+                
+                # default to copying without modification
+                w_line = r_line
+                                                        
+                # if line has a write-able field
+                if ('{:' in r_line):
+                    
+                    # get fieldname, format for value, and remaining string
+                    field = r_line.split()[1]
+                    value_format = r_line.split(field)[0]
+                    comment      = r_line.split(field)[-1]
+                    
+                    # check if comment line
+                    if ('TwrCmnt' in field):
+                        w_line = TurbDict[field] + '\n'
+                                                
+                    # if blade schedule
+                    elif (field == 'TwrSched'):
+                        
+                        TwrSched = TurbDict['TwrSched']
+                        
+                        # loop blade schedule
+                        for i_line in range(len(TwrSched)):
+                            w_line = value_format.format( \
+                                        *TwrSched[i_line])
+                            f_write.write(w_line + '\n')
+                        w_line = ''
+                    
+                    # otherwise, print key normally
+                    else:
+# TODO: add try/except to load default value if field not in dictionary
+                        value  = TurbDict[field]
+                        w_line = field.join([value_format.format(value),
+                                            comment])
+                    
+                f_write.write(w_line)
+                
+        sys.stdout.write('done.\n')
+
+    return
+
+
+def WritePitchCntrl(dir_out,TurbDict):
+    """ Pitch control routine for Kirk Pierce controller for FAST v7.02
+    """
+        
+    TurbName     = TurbDict['TurbName']
+    sys.stdout.write('\nWriting FAST v7.02 pitch.ipt file for turbine {:s}...'.format(TurbName))
+                        
+    # define path to base template and output file
+    fpath_temp = os.path.join('templates','Template_pitch.ipt')
+    fname_out = TurbDict['PitchFile']
+    fpath_out = os.path.join(dir_out,fname_out)
+    
+    # open template file and file to write to
+    with open(fpath_temp,'r') as f_temp:
+        with open(fpath_out,'w') as f_write:
+            
+            # read each line in template file
+            for r_line in f_temp:
+                
+                # default to copying without modification
+                w_line = r_line
+                                                        
+                # if line has a write-able field
+                if ('{:' in r_line):
+                    
+                    # get fieldname, format for value, and remaining string
+                    # check if "Num" or "Den" in field
+                    field = r_line.split()[1]
+                    value_format = r_line.split(field)[0]
+                    comment      = r_line.split(field)[-1]
+                    num_or_den   = [s for s in ('Num','Den') if s in field]
+                    
+                    # check if comment line
+                    if ('PitchCmnt' in field):
+                        w_line = TurbDict[field] + '\n'
+                        
+                    # check if it's a transfer function order
+                    elif ('Order' in field):
+                        w_line = '{:4d}      {:s}'.format(TurbDict[field], \
+                                                            comment)
+                                                            
+                    # else if numerator or denominator, loop through transfer fcn
+                    elif num_or_den:
+                        TF = field.split('_')[0]
+                        TF_Coeffs = TurbDict[TF+'_'+num_or_den[0]]
+                        for i_order in range(len(TF_Coeffs)):
+                            f_write.write(value_format.format( \
+                                                    TF_Coeffs[i_order]))
+                        w_line = comment
+                        
+                    # otherwise, print key normally
+                    else:
+# TODO: add try/except to load default value if field not in dictionary
+                        value  = TurbDict[field]
+                        w_line = field.join([value_format.format(value),
+                                            comment])
+                    
+                f_write.write(w_line)
+                
+        sys.stdout.write('done.\n')
+
     return

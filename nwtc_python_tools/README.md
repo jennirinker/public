@@ -14,7 +14,7 @@ Thsi directory is currently a work in progress.
 Usage
 -----
 A basic demonstration of the tools' capabilities can be found in 
-<demo.py>.
+<demo.py>. The script performs as follows:
 
 Contacts
 --------

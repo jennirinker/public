@@ -5,18 +5,27 @@ Demonstration of Python tools for working with NWTC CAE tools:
 """
 import jr_fast,os
 
-# specify path to FAST file
+# ============================== user inputs ==================================
+
+# specify path to FAST file to create dictionary from
 fast_fpath = os.path.join('demo_inputs','WP0.75A08V00.fst')
 
-print('\nCreating dictionary for turbine {:s}...\n'.format(fast_fpath))
+# directory to write FAST files to
+wr_dir = 'demo_outputs'
+
+# =============== should not need to change below this line ===================
 
 # create Python dictionary from FAST file
-turb_dict = jr_fast.CreateFAST7Dict(fast_fpath)
+TurbDict = jr_fast.CreateFAST7Dict(fast_fpath)
 
-print('Writing .fst template...\n'.format(fast_fpath))
+# write wind-dependent files (FAST and AeroDyn templates)
+jr_fast.WriteFAST7Template(wr_dir,TurbDict)
+jr_fast.WriteAeroDynTemplate(wr_dir,TurbDict)
 
-# write turbine-specific fast and aerodyn templates
-fpath_out = '.'
-jr_fast.WriteFASTTemplate(fpath_out,turb_dict)
+# write wind-independent files (blade files, tower files, and pitch file)
+jr_fast.WriteBladeFiles(wr_dir,TurbDict)
+jr_fast.WriteTowerFile(wr_dir,TurbDict)
+if (TurbDict['PCMode'] == 1):
+    jr_fast.WritePitchCntrl(wr_dir,TurbDict)
 
-print('Script complete.\n'.format(fast_fpath))
+print('\nScript Complete.\n'.format(fast_fpath))
