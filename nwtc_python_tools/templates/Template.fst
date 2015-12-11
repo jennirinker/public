@@ -68,10 +68,10 @@
 ---------------------- INITIAL CONDITIONS --------------------------------------
 {:6.1f}     OoPDefl     - Initial out-of-plane blade-tip displacement (meters)
 {:6.1f}     IPDefl      - Initial in-plane blade-tip deflection (meters)
-{:6.1f}      TeetDefl    - Initial or fixed teeter angle (degrees) [unused for 3 blades]
-{:6.1f}      Azimuth     - Initial azimuth angle for blade 1 (degrees)
-{:6.1f}      RotSpeed    - Initial or fixed rotor speed (rpm)
-{:6.1f}      NacYaw      - Initial or fixed nacelle-yaw angle (degrees)
+{:6.1f}     TeetDefl    - Initial or fixed teeter angle (degrees) [unused for 3 blades]
+{:6.1f}     Azimuth     - Initial azimuth angle for blade 1 (degrees)
+{:6.1f}     RotSpeed    - Initial or fixed rotor speed (rpm)
+{:6.1f}     NacYaw      - Initial or fixed nacelle-yaw angle (degrees)
 {:6.1f}     TTDspFA     - Initial fore-aft tower-top displacement (meters)
 {:6.1f}     TTDspSS     - Initial side-to-side tower-top displacement (meters)
 ---------------------- TURBINE CONFIGURATION -----------------------------------

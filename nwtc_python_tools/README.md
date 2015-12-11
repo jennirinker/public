@@ -1,6 +1,6 @@
 # nwtc_python_tools
 Python tools for working with NWTC CAE tools (creating input files,
-  writing .bat files, running code, and post-processing)
+  writing .bat files, running code, post-processing, etc.)
 
 Summary
 -------

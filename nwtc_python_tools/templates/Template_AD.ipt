@@ -19,4 +19,4 @@
 "{:s}"    FoilNm   - Names of the airfoil files [NumFoil lines] (quoted strings)
 {:4.0f}                                   BldNodes - Number of blade nodes used for analysis (-)
 RNodes    AeroTwst  DRNodes  Chord  NFoil  PrnElm
-{:8.5}{:7.2}{:12.5}{:7.3f}{:3.0f}{:13s}	ADSched
+{:8.5f}{:7.2f}{:12.5f}{:7.3f}{:3.0f}{:>13s}	ADSched
