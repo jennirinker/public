@@ -15,11 +15,9 @@ Usage
 -----
 A basic demonstration of the tools' capabilities can be found in 
 `demo.py`. The script performs as follows:
-1. Create Python dictionary from specified .fst file
-2. Create wind-dependent, turbine-specific files
-    (FAST and AeroDyn templates)
-3. Create wind-independent, turbine-specific files
-    (Blades, tower, and pitch files)
+1. Create Python dictionary from specified .fst file  
+2. Create wind-dependent, turbine-specific files (FAST and AeroDyn templates)  
+3. Create wind-independent, turbine-specific files (Blades, tower, and pitch files)  
 
 Contacts
 --------
