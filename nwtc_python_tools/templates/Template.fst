@@ -170,7 +170,7 @@
 {:1.0f}           OutFileFmt  - Format for tabular (time-marching) output file(s) (1: text file [<RootName>.out], 2: binary file [<RootName>.outb], 3: both) (switch)
 {:5s}       TabDelim    - Use tab delimiters in text tabular output file? (flag)
 "{:s}"  OutFmt      - Format used for text tabular output (except time).  Resulting field should be 10 characters. (quoted string)  [not checked for validity!]
-{:5.1f}      TStart      - Time to begin tabular output (s)
+{:5.1f}       TStart      - Time to begin tabular output (s)
   {:2.0f}        DecFact     - Decimation factor for tabular output {1: output every time step} (-)
 {:6.1f}      SttsTime    - Amount of time between screen status messages (sec)
 {:6.1f}      NcIMUxn     - Downwind distance from the tower-top to the nacelle IMU (meters)

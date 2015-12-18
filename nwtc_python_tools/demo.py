@@ -11,30 +11,42 @@ Demonstration of Python tools for working with NWTC CAE tools:
         - FAST file
         - AeroDyn file
 """
-import jr_fast, json
+import jr_fast, json, os
 
 # ============================== user inputs ==================================
-
-TurbDir    = 'demo_inputs/Turbine'              # directory to read turb files
-WindDir    = 'demo_inputs/Wind'                 # directory to read wind files
-WrDir      = '.'                                # directory to write files to
-fast_fpath = TurbDir + '/WP0.75A08V00.fst'      # file to create dict from
-DictPath = TurbDir + '/WP0.75A08V00_Dict.dat'   # path to load pre-processed
-                                                # turbine dictionary
-BlPitch0   = [2.6,2.6,2.6]      # opt: if None, autom. determined from windfile
-RotSpeed0  = 12.1               # opt: if None, autom. determined from windfile
-fileID     = '00'               # opt: wind-specific file identifier
-TMax       = 100.               # opt: if None, set to max time in wind file
 
 # flags to create turbine dictionary from .fst file or save dictionary
 process_dict = 1     # 0: load saved dict, 1: process dict from .fst
 save_dict    = 0     # 0: don't save processed dict
 
+# simulation specifications
+SimSpecs = {'BlPitch(1)':2.6,'BlPitch(2)':2.6,'BlPitch(3)':2.6,
+            'RotSpeed':12.1,'TMax':630.,'TStart':30.}
+            
+# directories and filepaths (shouldn't need to change for demo)
+CWD     = os.getcwd()                       # current working directory
+TmplDir = os.path.join(CWD,'templates')     # loc of all template files
+ModlDir = os.path.join(CWD,'demo_outputs')  # loc of blade, pitch, tower files
+                                            #    and directory with inter- 
+                                            #    mediate FAST/AD templates
+FastDir = os.path.join(CWD,'demo_outputs')  # loc of final FAST/AD files
+WindDir = os.path.join(CWD,'demo_inputs',
+                          'Wind')           # loc of wind files
+AeroDir = os.path.join(CWD,'demo_inputs',
+                       'AeroData')          # loc of airfoil data
+ReadDir  = os.path.join(CWD,'demo_inputs',
+                        'Turbine')         # loc pre-made FAST files to read
+FastPath = os.path.join(ReadDir,
+                        'WP0.75A08V00.fst')       # file to create dict from
+DictPath = os.path.join(ReadDir,
+                        'WP0.75A08V00_Dict.dat')  # path to pre-processed
+                                                  # turbine dictionary
+
 # =============== should not need to change below this line ===================
 
 # create Python dictionary from .fst file (processes sub-files as necessary)
 if process_dict:
-    TurbDict = jr_fast.CreateFAST7Dict(fast_fpath,
+    TurbDict = jr_fast.CreateFAST7Dict(FastPath,
                                        save=save_dict)
 
 # alternatively, load a dictionary that already exists
@@ -43,19 +55,21 @@ else:
         TurbDict = json.load(f_dict)
 
 # write wind-dependent files (FAST and AeroDyn templates)
-jr_fast.WriteFAST7Template(WrDir,TurbDict)
-jr_fast.WriteAeroDynTemplate(WrDir,TurbDict)
+jr_fast.WriteFAST7Template(TurbDict,TmplDir,ModlDir)
+jr_fast.WriteAeroDynTemplate(TurbDict,TmplDir,
+                             ModlDir,WindDir,AeroDir)
 
 # write wind-independent files (blade files, tower files, and pitch file)
-jr_fast.WriteBladeFiles(WrDir,TurbDict)
-jr_fast.WriteTowerFile(WrDir,TurbDict)
+jr_fast.WriteBladeFiles(TurbDict,TmplDir,ModlDir)
+jr_fast.WriteTowerFile(TurbDict,TmplDir,ModlDir)
 if (TurbDict['PCMode'] == 1):
-    jr_fast.WritePitchCntrl(WrDir,TurbDict)
+    jr_fast.WritePitchCntrl(TurbDict,TmplDir,ModlDir)
 
 # write wind-dependent files (FAST and AeroDyn files) for all wind files in
 #   specified directory
-jr_fast.WriteFAST7InputsAll(TurbDir,TurbDict['TurbName'],WindDir,
-                   BlPitch0=BlPitch0,RotSpeed0=RotSpeed0,
-                   TMax=TMax,wr_dir=WrDir,TmplDir=WrDir)
+jr_fast.WriteFAST7InputsAll(TurbDict['TurbName'],ModlDir,WindDir,FastDir,
+                            Naming=2,**SimSpecs)
 
-print('\nDemo Script Complete.\n'.format(fast_fpath))
+print('\nDemo Script Complete.\n')
+
+

@@ -22,46 +22,48 @@ def GetFirstWind(wind_fpath):
         Returns:
             u0 (float): initial wind value
     """
-
-    turb  = readModel(wind_fpath)            # read file
-    u0    = turb[0,:,:,0].mean()             # average first wind
-
-    return u0
     
-
-def GetLastTime(wind_fpath):
-    """ Last time step from wind file
-    
-        Args:
-            wind_fpath (string): path to wind file
-            
-        Returns:
-            tf (float): final time step
-    """
-
-    # if it's a .wnd file (text)
+    # if it's a .wnd file
     if wind_fpath.endswith('.wnd'):
-        with open(wind_fpath,'r') as f:
-            f.seek(-1024, 2)
-            last_line = f.readlines()[-1].decode()
-            tf = float(last_line[0])
+        
+        # try to read it as a text file
+        try:
+            with open(wind_fpath,'r') as f:
+                f.readline()
+                f.readline()
+                f.readline()
+                first_line = f.readline().split()
+                u0 = float(first_line[1])
+                
+        # if error, try to read as binary file
+        except:
+            turb  = readModel(wind_fpath)           # read file
+            u0    = turb[0,:,:,0].mean()            # take mean of u(t0)
     
     # if it's a .bts file
     elif wind_fpath.endswith('.bts'):
         
-        tsout = readModel(wind_fpath)            # read file
-        tf    = tsout.t[-1]                         # last time value
+        turb  = readModel(wind_fpath)            # read file
+        u0    = turb[0,:,:,0].mean()            # take mean of u(t0)
+        
+    # if it's a .bl file
+    elif wind_fpath.endswith('.bl'):
+        
+        turb  = readModel(wind_fpath)            # read file
+        u0    = turb[0,:,:,0].mean()            # take mean of u(t0)
 
     else:
-        errStr = 'Can only analyze .wnd (text) and .bts files'
+        errStr = 'Uncoded file extension ' + \
+                        '\"{:s}\"'.format(wind_fpath.endswith())
         ValueError(errStr)
-
-    return tf
-    
+        
+    return u0
+        
 # =============================================================================
 # Code modified from PyTurbSim to load field from turbsim output
 # Levi Kilcher, http://lkilcher.github.io/pyTurbSim/
     
+# define endian-ness
 e = '<'  
 
 # ------------------------------ functions ------------------------------------
@@ -152,7 +154,7 @@ def bladed(fname,):
         # flip the data back
         turb = turb[:, :, ::-1, :]
 
-    return turb
+    return turb, dt
 
 
 def turbsim(fname):
