@@ -8,20 +8,7 @@ CONTACT: jennifer.rinker@duke.edu
 ===============================================================================
 
 NOTES:
-    Wind turbine template directory (FAST 7)
-    ----------------------------------------
-    WriteFAST7 routines assume turbine directory is organized as follows:
-      turb_dir/
-        - Blade file(s)
-        - Tower file
-        - Pitch file
-        steady_state/
-            - "<TurbName>_SS.mat" [steady-state look-up table for ICs]
-        templates/
-            - "<TurbName>.fst" [turbine-specific FAST template generated
-                                                    with WriteFAST7Template]
-            - "<TurbName>_AD.ipt" [turbine-specific AeroDyn template generated
-                                                    with WriteAeroDynTemplate]
+    Currently only tested for FAST v7
 
 ===============================================================================
 """
@@ -33,20 +20,24 @@ import scipy.io as scio
 import numpy as np
 
 
-def WriteFAST7InputsAll(TurbName,ModlDir,WindDir,FastDir,
-                        Naming=1,
-                        **kwargs):
-    """ Write FAST 7 input files for all wind files in directory. Assumes wind 
-        turbine template directory has organization specified in module 
-        docstring. If output directory is specified, all FAST input files are 
-        either written or copied to specified directory.
+def WriteFastADAll(TurbName,ModlDir,WindDir,FastDir,
+                   version=7,Naming=1,
+                   **kwargs):
+    """ Write FAST and AeroDyn input files for all wind files in directory
     
         Args:
-            TurbDir (string): path to wind turbine template directory
             TurbName (string): turbine name
-            WindDir (string): directory to write input files to [opt]
-            kwargs (dictionary): keyword arguments to WriteFAST7InputsOne [opt]
-            
+            ModlDir (string): directory with wind-independent files (e.g.,
+                              Blade, Tower, Pitch files)
+            WindDir (string): directory with wind files
+            FastDir (string): directory to write FAST & AeroDyn files to
+                                
+        Keyword Args:
+            version (int): FAST version (7 or 8)
+            Naming (string): flag for naming convention for FAST files [opt]
+                                1 = '<WindName>.fst'
+                                2 = '<TurbName>_<WindName>.fst'
+            kwargs (dictionary): keyword arguments to WriteFastADOne [opt]
     """
     
     # possible wind file endings
@@ -58,119 +49,130 @@ def WriteFAST7InputsAll(TurbName,ModlDir,WindDir,FastDir,
     # loop through wind files
     for WindName in WindNames:
         WindPath = os.path.join(WindDir,WindName)
+        
+        # set filename according to naming conventions
         if Naming == 1:
             FastName = os.path.splitext(WindName)[0]
         elif Naming == 2:
             FastName = TurbName + '_' + os.path.splitext(WindName)[0]
-        WriteFAST7InputsOne(TurbName,WindPath,FastName,
-                        ModlDir,FastDir,
-                   **kwargs)
+            
+        # write FAST/AD files for 
+        WriteFastADOne(TurbName,WindPath,FastName,
+                       ModlDir,FastDir,version=version,
+                       **kwargs)
     
     return
     
-def WriteFAST7InputsOne(TurbName,WindPath,FastName,
-                        ModlDir,FastDir,
-                        **kwargs):
-    """ Write FAST 7 input files for one wind file. Assumes wind 
-        turbine template directory has organization specified in module 
-        docstring. If output directory is specified, all FAST input files are 
-        either written or copied to specified directory.
+def WriteFastADOne(TurbName,WindPath,FastName,
+                   ModlDir,FastDir,version=7,
+                   **kwargs):
+    """ Write FAST and AeroDyn input files for specified wind file
+    
+        Possible keyword arguments inclue any FAST initial conditions plus
+        TMax and TStart.
     
         Args:
-            TurbDir (string): path to turbine FAST directory
             TurbName (string): turbine name
-            wind_fname (string): name of wind file
-            wind_dir (string): path to directory with wind files
-            BlPitch0 (list/numpy array): initial blade pitch angles [opt]
-            RotSpee0 (float): initial rotor speed [opt]
-            fileID (string): file identifier [opt]
-            t_max (float): maximum simulation time [opt]
+            WindPath (string): path to wind file
+            FastName (sring): name for .fst file (AD will be "<Name>_AD.ipt")
+            ModlDir (string): directory with wind-independent files (e.g.,
+                              Blade, Tower, Pitch files)
+            FastDir (string): directory to write FAST & AeroDyn files to
             
+        Keyword Args (dictionary):
+            version (int): FAST version (7 or 8)
+            kwargs (dictionary): keyword arguments to WriteFastADOne [opt]
+                 
     """
+    
+    if (version == 7):
         
-    # define dictionary of default wind-dependent parameters
-    WindDict = {'BlPitch(1)':0.,'BlPitch(2)':0.,'BlPitch(3)':0.,
-                'OoPDefl':0.,'IPDefl':0.,'TeetDefl':0.,'Azimuth':0.,
-                'RotSpeed':0.,'NacYaw':0.,'TTDspFA':0.,'TTDspSS':0.,
-                'TMax':630.,'TStart':30.,'WindFile':WindPath}
+        # define dictionary of default wind-dependent parameters
+        WindDict = {'BlPitch(1)':0.,'BlPitch(2)':0.,'BlPitch(3)':0.,
+                    'OoPDefl':0.,'IPDefl':0.,'TeetDefl':0.,'Azimuth':0.,
+                    'RotSpeed':0.,'NacYaw':0.,'TTDspFA':0.,'TTDspSS':0.,
+                    'TMax':630.,'TStart':30.,'WindFile':WindPath}
+                    
+        print('\nWriting FAST v7.02 files for \"{:s}\" '.format(TurbName) + \
+                'with wind file {:s}...'.format(WindDict['WindFile']))
                 
-    print('\nWriting FAST v7.02 files for \"{:s}\" '.format(TurbName) + \
-            'with wind file {:s}...'.format(WindDict['WindFile']))
-            
-    # add passed-in arguments
-    for key in kwargs:
-        if key in WindDict.keys():
-            WindDict[key] = kwargs[key]
-    
-    # check if IC look-up table exists...
-    LUTPath = os.path.join(ModlDir,'steady_state',
-                                      TurbName+'_SS.mat')
-                                      
-    #    if LUT exists, load unspecific IC values
-    if os.path.exists(LUTPath):
-        print('  Interpolating unspecified IC values from ' + \
-                'look-up table {:s}'.format(LUTPath))
-                
-        # get list of keys corresponding to initial conditions and LUT keys
-        version = 7
-        IC_keys  = GetICKeys(version)
-        mdict    = scio.loadmat(LUTPath,squeeze_me=True)
-        LUT_keys = [str(s).strip() for s in mdict['Fields']]
-        LUT      = mdict['SS']
+        # add passed-in arguments
+        for key in kwargs:
+            if key in WindDict.keys():
+                WindDict[key] = kwargs[key]
         
-        # loop through IC keys
-        for IC_key in IC_keys:
+        # check if IC look-up table exists...
+        LUTPath = os.path.join(ModlDir,'steady_state',
+                                          TurbName+'_SS.mat')
+                                          
+        #    if LUT exists, load unspecific IC values
+        if os.path.exists(LUTPath):
+            print('  Interpolating unspecified IC values from ' + \
+                    'look-up table {:s}'.format(LUTPath))
+                    
+            # get list of keys corresponding to initial conditions and LUT keys
+            IC_keys  = GetICKeys(version)
+            mdict    = scio.loadmat(LUTPath,squeeze_me=True)
+            LUT_keys = [str(s).strip() for s in mdict['Fields']]
+            LUT      = mdict['SS']
             
-            # if it's a blade pitch, remove the number
-            if ('BlPitch' in IC_key):
-                IC_key = 'BldPitch'
-            
-            # if IC was not passed in and key is in LUT
-            if ((not [key for key in kwargs if IC_key in kwargs]) and \
-                (IC_key in LUT_keys)):
+            # loop through IC keys
+            for IC_key in IC_keys:
                 
-                # get grid-averaged first wind speed
-                u0 = jr_wind.GetFirstWind(WindDict['WindFile'])
+                # if it's a blade pitch, remove the number
+                if ('BlPitch' in IC_key):
+                    IC_key = 'BldPitch'
                 
-                # linearly interpolate initial condition
-                LUT_key = IC_key
-                IC = np.interp(u0,LUT[:,LUT_keys.index('WindVxi')],
-                                    LUT[:,LUT_keys.index(LUT_key)])
-                                    
-                # save initial condition
-                WindDict[IC_key] = IC
-
-    # create and save filenames
-    IntrDir    = os.path.join(ModlDir,'templates')       # Fast/AD template dir
-    ADTempPath = os.path.join(IntrDir,TurbName+'_AD_template.ipt')
-    ADName   = '{:s}_AD.ipt'.format(FastName)
-    ADPath     = os.path.join(FastDir,ADName)
-    FastName = '{:s}.fst'.format(FastName)
-    FastTempPath = os.path.join(IntrDir,TurbName+'_template.fst')
-    FastPath  = os.path.join(FastDir,FastName)
+                # if IC was not passed in and key is in LUT
+                if ((not [key for key in kwargs if IC_key in kwargs]) and \
+                    (IC_key in LUT_keys)):
+                    
+                    # get grid-averaged first wind speed
+                    u0 = jr_wind.GetFirstWind(WindDict['WindFile'])
+                    
+                    # linearly interpolate initial condition
+                    LUT_key = IC_key
+                    IC = np.interp(u0,LUT[:,LUT_keys.index('WindVxi')],
+                                        LUT[:,LUT_keys.index(LUT_key)])
+                                        
+                    # save initial condition
+                    WindDict[IC_key] = IC
     
-    WindDict['ADFile'] = os.path.join(FastDir,ADPath)
-    
-    
-    # write AeroDyn file
-    with open(ADTempPath,'r') as f_temp:
-        with open(ADPath,'w') as f_write:
-            for line in f_temp:
-                if ('{:' in line):
-                    field = line.split()[1]
-                    f_write.write(line.format(WindDict[field]))
-                else:
-                    f_write.write(line)
-                
-    # write FAST file
-    with open(FastTempPath,'r') as f_temp:
-        with open(FastPath,'w') as f_write:
-            for line in f_temp:
-                if ('{:' in line):
-                    field = line.split()[1]
-                    f_write.write(line.format(WindDict[field]))
-                else:
-                    f_write.write(line)
+        # create and save filenames
+        IntrDir    = os.path.join(ModlDir,'templates')       # Fast/AD template dir
+        ADTempPath = os.path.join(IntrDir,TurbName+'_AD_template.ipt')
+        ADName   = '{:s}_AD.ipt'.format(FastName)
+        ADPath     = os.path.join(FastDir,ADName)
+        FastName = '{:s}.fst'.format(FastName)
+        FastTempPath = os.path.join(IntrDir,TurbName+'_template.fst')
+        FastPath  = os.path.join(FastDir,FastName)
+        
+        WindDict['ADFile'] = os.path.join(FastDir,ADPath)
+        
+        
+        # write AeroDyn file
+        with open(ADTempPath,'r') as f_temp:
+            with open(ADPath,'w') as f_write:
+                for line in f_temp:
+                    if ('{:' in line):
+                        field = line.split()[1]
+                        f_write.write(line.format(WindDict[field]))
+                    else:
+                        f_write.write(line)
+                    
+        # write FAST file
+        with open(FastTempPath,'r') as f_temp:
+            with open(FastPath,'w') as f_write:
+                for line in f_temp:
+                    if ('{:' in line):
+                        field = line.split()[1]
+                        f_write.write(line.format(WindDict[field]))
+                    else:
+                        f_write.write(line)
+                        
+    else:
+        errStr = 'Code for FAST v8 has not yet been coded'
+        ValueError(errStr)
                              
     return
     

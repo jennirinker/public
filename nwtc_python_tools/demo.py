@@ -54,7 +54,7 @@ else:
     with open(DictPath,'r') as f_dict:
         TurbDict = json.load(f_dict)
 
-# write wind-dependent files (FAST and AeroDyn templates)
+# write templates for files that depend on wind file (FAST and AeroDyn)
 jr_fast.WriteFAST7Template(TurbDict,TmplDir,ModlDir)
 jr_fast.WriteAeroDynTemplate(TurbDict,TmplDir,
                              ModlDir,WindDir,AeroDir)
@@ -67,7 +67,7 @@ if (TurbDict['PCMode'] == 1):
 
 # write wind-dependent files (FAST and AeroDyn files) for all wind files in
 #   specified directory
-jr_fast.WriteFAST7InputsAll(TurbDict['TurbName'],ModlDir,WindDir,FastDir,
+jr_fast.WriteFastADAll(TurbDict['TurbName'],ModlDir,WindDir,FastDir,
                             Naming=2,**SimSpecs)
 
 print('\nDemo Script Complete.\n')
