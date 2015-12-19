@@ -22,8 +22,10 @@ with zero fixed-load mean.
 Usage
 -----
 To call the function in a script on array of turning points `array_ext`:  
-`import rainflow as rf  
-array_out = rf.rainflow(array_ext)`  
+```python
+import rainflow as rf  
+array_out = rf.rainflow(array_ext)
+```  
 
 To run the demonstration from a Python console:  
 `>>> execfile('demo_rainflow.py')`  
