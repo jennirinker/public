@@ -37,7 +37,7 @@ Original c code notes:
 /*    the user can supply a the value of a partial damage cycle: uc_mult   */
 -------------------------------------------------------------------------------
 """
-from numpy import abs as fabs
+from numpy import fabs as fabs
 import numpy as np
 
 def rainflow(array_ext,
