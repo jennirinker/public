@@ -1,13 +1,8 @@
 # rainflow
-Rainflow counting function with Goodman correction
-
-Summary  
--------  
-Function to return cycle counts and ranges with and without Goodman 
-correction for fatigue analyses  
+Rainflow cycle counts and ranges with Goodman correction
 
 Notes  
------  
+-------  
 The directory includes a module with the function (`rainflow.py`) and 
 a demo script (`demo_rainflow.py`).  
 
