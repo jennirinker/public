@@ -12,10 +12,13 @@ function takes an array of turning points of a signal and returns an
 array of the load ranges, range mean, Goodman-adjusted cycle range with 
 specified fixed-load mean, cycle count, and Goodman-adjusted cycle range
 with zero fixed-load mean.  
-
-
+  
+Dependencies
+------------  
+Numpy >= v1.3
+  
 Usage
------
+-----  
 To call the function in a script on array of turning points `array_ext`:  
 ```python
 import rainflow as rf  
