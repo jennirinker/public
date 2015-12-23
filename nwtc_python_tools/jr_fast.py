@@ -5,12 +5,14 @@ files.
 AUTHOR:  Jenni Rinker, Duke University
 CONTACT: jennifer.rinker@duke.edu
 
-===============================================================================
 
 NOTES:
     Currently only tested for FAST v7
 
-===============================================================================
+TODO:
+    - Proper handling of tower gage/blade gage nodes (currently only tested with none)
+    - Porper handling of DISCON controller (currently breaks)
+
 """
 
 # module dependencies
@@ -81,6 +83,7 @@ def WriteFastADOne(TurbName,WindPath,FastName,
             
         Keyword Args (dictionary):
             version (int): FAST version (7 or 8)
+            verbose (boolean): flag to pring updates
             kwargs (dictionary): keyword arguments to WriteFastADOne [opt]
                  
     """
@@ -184,25 +187,29 @@ def WriteFastADOne(TurbName,WindPath,FastName,
                              
     return
     
-def CreateFAST7Dict(fast_fpath,
+def CreateFAST7Dict(FastPath,
                     save=0,save_dir='.'):
     """ Build and save FAST 7 Python dictionary from input file
     
         Args:
-            fast_fpath (string): path to .fst file
+            FastPath (string): path to .fst file
+            
+        Keyword Args:
+            save (boolean): flag to save dictionary
+            save_dir (string): directory for dictionary saving
             
         Returns:
             TurbDict (dictionary): dictionary of turbine parameters
     """
     
     # ensure path is to a .fst file 
-    if not fast_fpath.endswith('.fst'):
-        err_str = 'Path {:s} is not to a FAST 7 input file'.format(fast_fpath)
+    if not FastPath.endswith('.fst'):
+        err_str = 'Path {:s} is not to a FAST 7 input file'.format(FastPath)
         ValueError(err_str)
         
     # get turbine name and location, change to turbine directory
-    turb_dir   = os.path.dirname(fast_fpath)
-    fast_fname = os.path.basename(fast_fpath)
+    turb_dir   = os.path.dirname(FastPath)
+    fast_fname = os.path.basename(FastPath)
     
     print('\nCreating FAST 7 dictionary...')
     print('  Reading FAST 7 file: {:s}'.format(fast_fname))
@@ -220,6 +227,9 @@ def CreateFAST7Dict(fast_fpath,
     print('\n  Processing files...')
         
     # ==================== read data from .fst file ===========================
+        
+# TODO: handle pitch.ipt if model actually uses DISCON controller
+# TODO: add checks for TwrGagNodes and Bld  Gag nodes      
         
     sys.stdout.write('    FAST file:     {:s}...'.format(fast_fname))
     
@@ -564,9 +574,11 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
         Template can then be used to write wind-file-specic .fst files.
     
         Args:
-            dir_out (string): directory to write template files to
-            TurbDict (dictionary): dictionary of turbine parameters
-            Comment (list): two-string list of header lines in FAST file 
+            TurbDict (dictionary): dictionary with FAST parameters
+            TmplDir (string): directory with template files
+            ModlDir (string): directory with wind-independent files (e.g.,
+                              Blade, Tower, Pitch files)
+            WrDir (string): directory to write Fast template to
         
     """
 
@@ -622,7 +634,8 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
                                             comment])
                     
                 f_write.write(w_line)
-               
+# TODO: add check for proper tower/bladgagnde handling (currently does not do it right)  
+             
     print('done.')
     
     return
@@ -630,6 +643,14 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
 
 def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir):
     """ AeroDyn input file for FAST v7.02
+    
+        Args:
+            TurbDict (dictionary): dictionary with FAST parameters
+            TmplDir (string): directory with template files
+            ModlDir (string): directory with wind-independent files (e.g.,
+                              Blade, Tower, Pitch files)
+            AeroDir (string): directory with aerodynamic files
+            WrDir (string): directory to write Fast template to
     """
         
     TurbName     = TurbDict['TurbName']
@@ -708,6 +729,11 @@ def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir):
 
 def WriteBladeFiles(TurbDict,TmplDir,WrDir):
     """ Blade input files for FAST v7.02
+    
+        Args:
+            TurbDict (dictionary): dictionary with FAST parameters
+            TmplDir (string): directory with template files
+            WrDir (string): directory to write Fast template to
     """
         
     TurbName     = TurbDict['TurbName']
@@ -776,6 +802,11 @@ def WriteBladeFiles(TurbDict,TmplDir,WrDir):
 
 def WriteTowerFile(TurbDict,TmplDir,WrDir):
     """ Tower input files for FAST v7.02
+    
+        Args:
+            TurbDict (dictionary): dictionary with FAST parameters
+            TmplDir (string): directory with template files
+            WrDir (string): directory to write Fast template to
     """
         
     TurbName     = TurbDict['TurbName']
@@ -836,6 +867,11 @@ def WriteTowerFile(TurbDict,TmplDir,WrDir):
 
 def WritePitchCntrl(TurbDict,TmplDir,WrDir):
     """ Pitch control routine for Kirk Pierce controller for FAST v7.02
+    
+        Args:
+            TurbDict (dictionary): dictionary with FAST parameters
+            TmplDir (string): directory with template files
+            WrDir (string): directory to write Fast template to
     """
         
     TurbName     = TurbDict['TurbName']
@@ -929,7 +965,7 @@ def GetWindfileKeys(version,FastFlag):
     return windfile_keys
     
 def GetInputFileKeys(version):
-    """ List of keys in .fst that are input  files
+    """ List of keys in .fst that are input files
     
         Args:
             version (int): FAST version (7 or 8)
@@ -965,7 +1001,7 @@ def GetICKeys(version):
     """
     
     if version == 7:
-        inputfile_keys = ['BlPitch(1)','BlPitch(2)','BlPitch(3)',
+        IC_keys = ['BlPitch(1)','BlPitch(2)','BlPitch(3)',
                         'OoPDefl','IPDefl','TeetDefl','Azimuth',
                         'RotSpeed','TTDspFA','TTDspSS']
                  
@@ -977,5 +1013,5 @@ def GetICKeys(version):
         errStr = 'Uncoded version \"{:d}\".'.format(version)
         ValueError(errStr)
     
-    return inputfile_keys
+    return IC_keys
     
