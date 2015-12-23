@@ -43,9 +43,9 @@ True        GenTiStp    - Method to stop the generator {T: timed using TimGenOf,
 9999.9      TPitManE(1) - Time at which override pitch maneuver for blade 1 reaches final pitch (s)
 9999.9      TPitManE(2) - Time at which override pitch maneuver for blade 2 reaches final pitch (s)
 9999.9      TPitManE(3) - Time at which override pitch maneuver for blade 3 reaches final pitch (s) [unused for 2 blades]
-   2.6      BlPitch(1)  - Blade 1 initial pitch (degrees)
-   2.6      BlPitch(2)  - Blade 2 initial pitch (degrees)
-   2.6      BlPitch(3)  - Blade 3 initial pitch (degrees) [unused for 2 blades]
+  14.9      BlPitch(1)  - Blade 1 initial pitch (degrees)
+  14.9      BlPitch(2)  - Blade 2 initial pitch (degrees)
+  14.9      BlPitch(3)  - Blade 3 initial pitch (degrees) [unused for 2 blades]
    2.6      BlPitchF(1) - Blade 1 final pitch for pitch maneuvers (degrees)
    2.6      BlPitchF(2) - Blade 2 final pitch for pitch maneuvers (degrees)
    2.6      BlPitchF(3) - Blade 3 final pitch for pitch maneuvers (degrees) [unused for 2 blades]

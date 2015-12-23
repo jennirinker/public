@@ -30,6 +30,8 @@ ModlDir = os.path.join(CWD,'demo_outputs')  # loc of blade, pitch, tower files
                                             #    and directory with inter- 
                                             #    mediate FAST/AD templates
 FastDir = os.path.join(CWD,'demo_outputs')  # loc of final FAST/AD files
+FastADTmplDir = os.path.join(ModlDir,
+                             'templates')   # loc FAST/AeroDyn templates
 WindDir = os.path.join(CWD,'demo_inputs',
                           'Wind')           # loc of wind files
 AeroDir = os.path.join(CWD,'demo_inputs',
@@ -55,9 +57,9 @@ else:
         TurbDict = json.load(f_dict)
 
 # write templates for files that depend on wind file (FAST and AeroDyn)
-jr_fast.WriteFAST7Template(TurbDict,TmplDir,ModlDir)
+jr_fast.WriteFAST7Template(TurbDict,TmplDir,ModlDir,FastADTmplDir)
 jr_fast.WriteAeroDynTemplate(TurbDict,TmplDir,
-                             ModlDir,WindDir,AeroDir)
+                             ModlDir,AeroDir,FastADTmplDir)
 
 # write wind-independent files (blade files, tower files, and pitch file)
 jr_fast.WriteBladeFiles(TurbDict,TmplDir,ModlDir)

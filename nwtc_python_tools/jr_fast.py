@@ -64,7 +64,7 @@ def WriteFastADAll(TurbName,ModlDir,WindDir,FastDir,
     return
     
 def WriteFastADOne(TurbName,WindPath,FastName,
-                   ModlDir,FastDir,version=7,
+                   ModlDir,FastDir,version=7,verbose=0,
                    **kwargs):
     """ Write FAST and AeroDyn input files for specified wind file
     
@@ -93,8 +93,9 @@ def WriteFastADOne(TurbName,WindPath,FastName,
                     'RotSpeed':0.,'NacYaw':0.,'TTDspFA':0.,'TTDspSS':0.,
                     'TMax':630.,'TStart':30.,'WindFile':WindPath}
                     
-        print('\nWriting FAST v7.02 files for \"{:s}\" '.format(TurbName) + \
-                'with wind file {:s}...'.format(WindDict['WindFile']))
+        if verbose:
+            print('\nWriting FAST v7.02 files for \"{:s}\" '.format(TurbName) + \
+                    'with wind file {:s}...'.format(WindDict['WindFile']))
                 
         # add passed-in arguments
         for key in kwargs:
@@ -107,8 +108,9 @@ def WriteFastADOne(TurbName,WindPath,FastName,
                                           
         #    if LUT exists, load unspecific IC values
         if os.path.exists(LUTPath):
-            print('  Interpolating unspecified IC values from ' + \
-                    'look-up table {:s}'.format(LUTPath))
+            if verbose:
+                print('  Interpolating unspecified IC values from ' + \
+                        'look-up table {:s}'.format(LUTPath))
                     
             # get list of keys corresponding to initial conditions and LUT keys
             IC_keys  = GetICKeys(version)
@@ -117,26 +119,32 @@ def WriteFastADOne(TurbName,WindPath,FastName,
             LUT      = mdict['SS']
             
             # loop through IC keys
-            for IC_key in IC_keys:
+            for i_key in range(len(IC_keys)):
+                IC_key = IC_keys[i_key]
                 
-                # if it's a blade pitch, remove the number
+                # if it's a blade pitch, different FAST key than LUT
                 if ('BlPitch' in IC_key):
-                    IC_key = 'BldPitch'
+                    IC_key = 'BldPitch'                    
+                    
+                # see if IC key is in LUT, get LUT key if applicable
+                try:
+                    LUT_key = [s for s in LUT_keys if IC_key in s][0]
+                except IndexError:
+                    LUT_key = []
                 
                 # if IC was not passed in and key is in LUT
                 if ((not [key for key in kwargs if IC_key in kwargs]) and \
-                    (IC_key in LUT_keys)):
-                    
+                    LUT_key):
+                        
                     # get grid-averaged first wind speed
                     u0 = jr_wind.GetFirstWind(WindDict['WindFile'])
                     
                     # linearly interpolate initial condition
-                    LUT_key = IC_key
                     IC = np.interp(u0,LUT[:,LUT_keys.index('WindVxi')],
                                         LUT[:,LUT_keys.index(LUT_key)])
                                         
                     # save initial condition
-                    WindDict[IC_key] = IC
+                    WindDict[IC_keys[i_key]] = IC
     
         # create and save filenames
         IntrDir    = os.path.join(ModlDir,'templates')       # Fast/AD template dir
@@ -551,7 +559,7 @@ def CreateFAST7Dict(fast_fpath,
     
     return TurbDict
     
-def WriteFAST7Template(TurbDict,TmplDir,ModlDir):
+def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
     """ Create turbine-specific FAST v7.02 template file.
         Template can then be used to write wind-file-specic .fst files.
     
@@ -567,7 +575,7 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir):
                         
     # define path to base template and output filename
     fpath_temp = os.path.join(TmplDir,'Template.fst')
-    fpath_out  = os.path.join(ModlDir,'templates',TurbName+'_template.fst')
+    fpath_out  = os.path.join(WrDir,TurbName+'_template.fst')
     
     # get list of special .fst keys
     version, FastFlag = 7, 1
@@ -620,7 +628,7 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir):
     return
 
 
-def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,WindDir,AeroDir):
+def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir):
     """ AeroDyn input file for FAST v7.02
     """
         
@@ -630,8 +638,7 @@ def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,WindDir,AeroDir):
                         
     # define path to base template and output filename
     fpath_temp = os.path.join(TmplDir,'Template_AD.ipt')
-    fpath_out  = os.path.join(ModlDir,'templates',
-                              TurbName + '_AD_template.ipt')
+    fpath_out  = os.path.join(WrDir,TurbName + '_AD_template.ipt')
     
     # get list of keys to skip (they depend on wind file)
     version, FastFlag = 7, 0
@@ -699,7 +706,7 @@ def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,WindDir,AeroDir):
     return
 
 
-def WriteBladeFiles(TurbDict,TmplDir,ModlDir):
+def WriteBladeFiles(TurbDict,TmplDir,WrDir):
     """ Blade input files for FAST v7.02
     """
         
@@ -716,7 +723,7 @@ def WriteBladeFiles(TurbDict,TmplDir,ModlDir):
     
         # get output paths and string appender for blade
         fname_out = TurbDict['BldFile({:d})'.format(i_bl)]
-        fpath_out = os.path.join(ModlDir,fname_out)
+        fpath_out = os.path.join(WrDir,fname_out)
         bld_str   = '_{:d}'.format(i_bl)
     
         # open template file and file to write to
@@ -767,7 +774,7 @@ def WriteBladeFiles(TurbDict,TmplDir,ModlDir):
     return
 
 
-def WriteTowerFile(TurbDict,TmplDir,ModlDir):
+def WriteTowerFile(TurbDict,TmplDir,WrDir):
     """ Tower input files for FAST v7.02
     """
         
@@ -777,7 +784,7 @@ def WriteTowerFile(TurbDict,TmplDir,ModlDir):
     # define path to base template and output file
     fpath_temp = os.path.join(TmplDir,'Template_Tower.dat')
     fname_out = TurbDict['TwrFile']
-    fpath_out = os.path.join(ModlDir,fname_out)
+    fpath_out = os.path.join(WrDir,fname_out)
     
     # open template file and file to write to
     with open(fpath_temp,'r') as f_temp:
@@ -827,7 +834,7 @@ def WriteTowerFile(TurbDict,TmplDir,ModlDir):
     return
 
 
-def WritePitchCntrl(TurbDict,TmplDir,ModlDir):
+def WritePitchCntrl(TurbDict,TmplDir,WrDir):
     """ Pitch control routine for Kirk Pierce controller for FAST v7.02
     """
         
@@ -837,7 +844,7 @@ def WritePitchCntrl(TurbDict,TmplDir,ModlDir):
     # define path to base template and output file
     fpath_temp = os.path.join(TmplDir,'Template_pitch.ipt')
     fname_out = TurbDict['PitchFile']
-    fpath_out = os.path.join(ModlDir,fname_out)
+    fpath_out = os.path.join(WrDir,fname_out)
     
     # open template file and file to write to
     with open(fpath_temp,'r') as f_temp:
