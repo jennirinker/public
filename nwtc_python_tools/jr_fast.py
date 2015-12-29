@@ -188,7 +188,7 @@ def WriteFastADOne(TurbName,WindPath,FastName,
     return
     
 def CreateFAST7Dict(FastPath,
-                    save=0,save_dir='.'):
+                    save=0,save_dir='.',verbose=0):
     """ Build and save FAST 7 Python dictionary from input file
     
         Args:
@@ -197,6 +197,7 @@ def CreateFAST7Dict(FastPath,
         Keyword Args:
             save (boolean): flag to save dictionary
             save_dir (string): directory for dictionary saving
+            verbose (int): flag to suppress print statements
             
         Returns:
             TurbDict (dictionary): dictionary of turbine parameters
@@ -211,9 +212,10 @@ def CreateFAST7Dict(FastPath,
     turb_dir   = os.path.dirname(FastPath)
     fast_fname = os.path.basename(FastPath)
     
-    print('\nCreating FAST 7 dictionary...')
-    print('  Reading FAST 7 file: {:s}'.format(fast_fname))
-    print('  Directory:           {:s}'.format(turb_dir))
+    if verbose:
+        print('\nCreating FAST 7 dictionary...')
+        print('  Reading FAST 7 file: {:s}'.format(fast_fname))
+        print('  Directory:           {:s}'.format(turb_dir))
     
     # change to turbine directory, keep current directory
     old_dir = os.getcwd()
@@ -224,14 +226,16 @@ def CreateFAST7Dict(FastPath,
     TurbDict['TurbName'] = fast_fname[:-4]
     TurbDict['TurbDir']  = turb_dir
     
-    print('\n  Processing files...')
+    if verbose:
+        print('\n  Processing files...')
         
     # ==================== read data from .fst file ===========================
         
 # TODO: handle pitch.ipt if model actually uses DISCON controller
 # TODO: add checks for TwrGagNodes and Bld  Gag nodes      
         
-    sys.stdout.write('    FAST file:     {:s}...'.format(fast_fname))
+    if verbose:
+        sys.stdout.write('    FAST file:     {:s}...'.format(fast_fname))
     
     with open(fast_fname,'r') as f:
         
@@ -270,12 +274,14 @@ def CreateFAST7Dict(FastPath,
                 line = f.readline()
         TurbDict['OutList'] = OutList
         
-    sys.stdout.write('processed.\n')
+    if verbose:
+        sys.stdout.write('processed.\n')
             
     # ============== read data from platform file if used =====================
     if TurbDict['PtfmModel']:
         
-        sys.stdout.write('    Platform file:' + \
+        if verbose:
+            sys.stdout.write('    Platform file:' + \
                                 ' {:s}...'.format(TurbDict['PtfmFile']))
     
         with open(TurbDict['PtfmFile'],'r') as f:
@@ -303,11 +309,13 @@ def CreateFAST7Dict(FastPath,
                 
                 line = f.readline().rstrip('\n')
                 
-        sys.stdout.write('processed.\n')
+        if verbose:
+            sys.stdout.write('processed.\n')
             
     # =================== read data from tower file ===========================
          
-    sys.stdout.write('    Tower ' + \
+    if verbose:
+        sys.stdout.write('    Tower ' + \
                         'file:    {:s}...'.format(TurbDict['TwrFile']))
              
     with open(TurbDict['TwrFile'],'r') as f:
@@ -359,12 +367,14 @@ def CreateFAST7Dict(FastPath,
             
             line = f.readline().rstrip('\n')  
             
-    sys.stdout.write('processed.\n')
+    if verbose:
+        sys.stdout.write('processed.\n')
                     
     # =============== read data from furling file if used =====================
     if ( TurbDict['Furling'] == 'True' ):
         
-        sys.stdout.write('    Furling ' + \
+        if verbose:
+            sys.stdout.write('    Furling ' + \
                         'file:  {:s}...'.format(TurbDict['FurlFile']))
              
         with open(TurbDict['FurlFile'],'r') as f:
@@ -392,7 +402,8 @@ def CreateFAST7Dict(FastPath,
                 
                 line = f.readline().rstrip('\n')
                 
-        sys.stdout.write('processed.\n')
+        if verbose:
+            sys.stdout.write('processed.\n')
             
     # =================== read data from blade files ==========================
                 
@@ -402,7 +413,8 @@ def CreateFAST7Dict(FastPath,
         bl_str = '_' + str(i_bl)                    # append '_x' to keys
         bl_key = 'BldFile({:d})'.format(i_bl)       # blade file key
         
-        sys.stdout.write('    Blade {:d} '.format(i_bl) + \
+        if verbose:
+            sys.stdout.write('    Blade {:d} '.format(i_bl) + \
                         'file:  {:s}...'.format(TurbDict[bl_key]))
                      
         with open(TurbDict[bl_key],'r') as f:
@@ -454,11 +466,13 @@ def CreateFAST7Dict(FastPath,
                 
                 line = f.readline().rstrip('\n') 
                
-        sys.stdout.write('processed.\n')
+        if verbose:
+            sys.stdout.write('processed.\n')
              
     # =================== read data from AeroDyn file =========================
         
-    sys.stdout.write('    AeroDyn ' + \
+    if verbose:
+        sys.stdout.write('    AeroDyn ' + \
                         'file:  {:s}...'.format(TurbDict['ADFile']))
              
     with open(TurbDict['ADFile'],'r') as f:
@@ -516,14 +530,17 @@ def CreateFAST7Dict(FastPath,
             AD_prop.append(row)
         TurbDict['ADSched'] = AD_prop
         
-    sys.stdout.write('processed.\n')
+    if verbose:
+        sys.stdout.write('processed.\n')
                     
     # =============== read data from pitch file if used =====================
     if ( TurbDict['PCMode'] == 1):
         
+# TODO: add check if pitch.ipt or DISCON
         TurbDict['PitchFile'] = 'pitch.ipt'
         
-        sys.stdout.write('    Pitch ' + \
+        if verbose:
+            sys.stdout.write('    Pitch ' + \
                         'file:    pitch.ipt...')
              
         with open('pitch.ipt','r') as f:
@@ -552,8 +569,9 @@ def CreateFAST7Dict(FastPath,
                 TurbDict[TF+'_Num']  = NumCoeffs
                 TurbDict[TF+'_Den']  = DenCoeffs
                 f.readline()                # skip empty line
-                                    
-        sys.stdout.write('processed.\n')
+                 
+        if verbose:                   
+            sys.stdout.write('processed.\n')
             
 # TODO: load data from noise file, linearization file, ADAMS file
                 
