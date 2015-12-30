@@ -33,9 +33,7 @@ def WriteFastADAll(TurbName,ModlDir,WindDir,FastDir,
                               Blade, Tower, Pitch files)
             WindDir (string): directory with wind files
             FastDir (string): directory to write FAST & AeroDyn files to
-                                
-        Keyword Args:
-            version (int): FAST version (7 or 8)
+            version (int): FAST version (7 or 8) [opt]
             Naming (string): flag for naming convention for FAST files [opt]
                                 1 = '<WindName>.fst'
                                 2 = '<TurbName>_<WindName>.fst'
@@ -80,10 +78,8 @@ def WriteFastADOne(TurbName,WindPath,FastName,
             ModlDir (string): directory with wind-independent files (e.g.,
                               Blade, Tower, Pitch files)
             FastDir (string): directory to write FAST & AeroDyn files to
-            
-        Keyword Args (dictionary):
-            version (int): FAST version (7 or 8)
-            verbose (boolean): flag to pring updates
+            version (int): FAST version (7 or 8) [opt]
+            verbose (int): flag to suppress print statements [opt]
             kwargs (dictionary): keyword arguments to WriteFastADOne [opt]
                  
     """
@@ -197,7 +193,7 @@ def CreateFAST7Dict(FastPath,
         Keyword Args:
             save (boolean): flag to save dictionary
             save_dir (string): directory for dictionary saving
-            verbose (int): flag to suppress print statements
+            verbose (int): flag to suppress print statements [opt]
             
         Returns:
             TurbDict (dictionary): dictionary of turbine parameters
@@ -583,11 +579,13 @@ def CreateFAST7Dict(FastPath,
         fpath_save = os.path.join(save_dir,TurbDict['TurbName']+'_Dict.dat')
         with open(fpath_save,'w') as fsave:
             json.dump(TurbDict,fsave)
-        print('\nTurbDict saved to {:s}'.format(fpath_save))    
+        if verbose:
+            print('\nTurbDict saved to {:s}'.format(fpath_save))    
     
     return TurbDict
     
-def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
+def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir,
+                       verbose=0):
     """ Create turbine-specific FAST v7.02 template file.
         Template can then be used to write wind-file-specic .fst files.
     
@@ -597,11 +595,13 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
             ModlDir (string): directory with wind-independent files (e.g.,
                               Blade, Tower, Pitch files)
             WrDir (string): directory to write Fast template to
+            verbose (int): flag to suppress print statements [opt]
         
     """
 
     TurbName     = TurbDict['TurbName']
-    sys.stdout.write('\nWriting FAST 7.02 template for turbine {:s}...'.format(TurbName))
+    if verbose:
+        sys.stdout.write('\nWriting FAST 7.02 template for turbine {:s}...'.format(TurbName))
                         
     # define path to base template and output filename
     fpath_temp = os.path.join(TmplDir,'Template.fst')
@@ -639,6 +639,13 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
                         for i_line in range(len(TurbDict['OutList'])-1):
                             f_write.write(TurbDict['OutList'][i_line])
                             w_line = TurbDict['OutList'][-1]
+                            
+                    # check if quadratic torque constant (may need to truncate)
+                    elif (field == 'VS_Rgn2K'):
+                        Rgn2K  = int(1e6 * TurbDict[field])/float(1e6)
+                        value  = Rgn2K
+                        w_line = field.join([value_format.format(value),
+                                            comment])
                     
                     # otherwise, if key is not to be skipped
                     elif (field not in windfile_keys):
@@ -654,12 +661,14 @@ def WriteFAST7Template(TurbDict,TmplDir,ModlDir,WrDir):
                 f_write.write(w_line)
 # TODO: add check for proper tower/bladgagnde handling (currently does not do it right)  
              
-    print('done.')
+    if verbose:
+        print('done.')
     
     return
 
 
-def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir):
+def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir,
+                         verbose=0):
     """ AeroDyn input file for FAST v7.02
     
         Args:
@@ -669,10 +678,12 @@ def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir):
                               Blade, Tower, Pitch files)
             AeroDir (string): directory with aerodynamic files
             WrDir (string): directory to write Fast template to
+            verbose (int): flag to suppress print statements [opt]
     """
         
     TurbName     = TurbDict['TurbName']
-    sys.stdout.write('\nWriting AeroDyn v13 template' + \
+    if verbose:
+        sys.stdout.write('\nWriting AeroDyn v13 template' + \
                         ' for turbine {:s}...'.format(TurbName))
                         
     # define path to base template and output filename
@@ -733,29 +744,32 @@ def WriteAeroDynTemplate(TurbDict,TmplDir,ModlDir,AeroDir,WrDir):
                     
                     #  if key is not to be skipped
                     elif (field not in windfile_keys):
-# TODO: add try/except to load default value if field not in dictionary
                         value  = TurbDict[field]
                         w_line = field.join([value_format.format(value),
                                             comment])
                     
                 f_write.write(w_line)
                 
-    print('done.')
+    if verbose:
+        print('done.')
     
     return
 
 
-def WriteBladeFiles(TurbDict,TmplDir,WrDir):
+def WriteBladeFiles(TurbDict,TmplDir,WrDir,
+                    verbose=0):
     """ Blade input files for FAST v7.02
     
         Args:
             TurbDict (dictionary): dictionary with FAST parameters
             TmplDir (string): directory with template files
             WrDir (string): directory to write Fast template to
+            verbose (int): flag to suppress print statements [opt]
     """
         
     TurbName     = TurbDict['TurbName']
-    print('\nWriting FAST v7.02 blade files for turbine {:s}...'.format(TurbName))
+    if verbose:
+        print('\nWriting FAST v7.02 blade files for turbine {:s}...'.format(TurbName))
                         
     # define path to base template
     fpath_temp = os.path.join(TmplDir,'Template_Blade.dat')
@@ -763,7 +777,8 @@ def WriteBladeFiles(TurbDict,TmplDir,WrDir):
     # loop through blades
     for i_bl in range(1,int(TurbDict['NumBl'])+1):
         
-        sys.stdout.write('  Blade {:d}...'.format(i_bl))
+        if verbose:
+            sys.stdout.write('  Blade {:d}...'.format(i_bl))
     
         # get output paths and string appender for blade
         fname_out = TurbDict['BldFile({:d})'.format(i_bl)]
@@ -812,23 +827,28 @@ def WriteBladeFiles(TurbDict,TmplDir,WrDir):
                                                 comment])
                         
                     f_write.write(w_line)
-                    
+            
+        if verbose:
             sys.stdout.write('done.\n')
     
     return
 
 
-def WriteTowerFile(TurbDict,TmplDir,WrDir):
+def WriteTowerFile(TurbDict,TmplDir,WrDir,
+                   verbose=0):
     """ Tower input files for FAST v7.02
     
         Args:
             TurbDict (dictionary): dictionary with FAST parameters
             TmplDir (string): directory with template files
             WrDir (string): directory to write Fast template to
+            verbose (int): flag to suppress print statements [opt]
     """
         
     TurbName     = TurbDict['TurbName']
-    sys.stdout.write('\nWriting FAST v7.02 tower file for turbine {:s}...'.format(TurbName))
+    if verbose:
+        sys.stdout.write('\nWriting FAST v7.02 tower' + \
+                        ' file for turbine {:s}...'.format(TurbName))
                         
     # define path to base template and output file
     fpath_temp = os.path.join(TmplDir,'Template_Tower.dat')
@@ -878,22 +898,27 @@ def WriteTowerFile(TurbDict,TmplDir,WrDir):
                     
                 f_write.write(w_line)
                 
+    if verbose:
         sys.stdout.write('done.\n')
 
     return
 
 
-def WritePitchCntrl(TurbDict,TmplDir,WrDir):
+def WritePitchCntrl(TurbDict,TmplDir,WrDir,
+                    verbose=0):
     """ Pitch control routine for Kirk Pierce controller for FAST v7.02
     
         Args:
             TurbDict (dictionary): dictionary with FAST parameters
             TmplDir (string): directory with template files
             WrDir (string): directory to write Fast template to
+            verbose (int): flag to suppress print statements [opt]
     """
         
     TurbName     = TurbDict['TurbName']
-    sys.stdout.write('\nWriting FAST v7.02 pitch.ipt file for turbine {:s}...'.format(TurbName))
+    if verbose:
+        sys.stdout.write('\nWriting FAST v7.02 pitch.ipt' + \
+                        ' file for turbine {:s}...'.format(TurbName))
                         
     # define path to base template and output file
     fpath_temp = os.path.join(TmplDir,'Template_pitch.ipt')
@@ -947,6 +972,7 @@ def WritePitchCntrl(TurbDict,TmplDir,WrDir):
                     
                 f_write.write(w_line)
                 
+    if verbose:
         sys.stdout.write('done.\n')
 
     return
