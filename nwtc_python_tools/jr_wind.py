@@ -59,14 +59,13 @@ def GetFirstWind(wind_fpath):
         
     return u0
         
-# =============================================================================
+# ---------------------------- PyTurbSim code ---------------------------------
 # Code modified from PyTurbSim to load field from turbsim output
 # Levi Kilcher, http://lkilcher.github.io/pyTurbSim/
     
 # define endian-ness
 e = '<'  
 
-# ------------------------------ functions ------------------------------------
 def readModel(fname, ):
     """
     Read a TurbSim data and input file and return a

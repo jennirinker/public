@@ -63,8 +63,8 @@ def WriteFastADAll(TurbName,ModlDir,WindDir,FastDir,
     
     return
     
-def WriteFastADOne(TurbName,WindPath,FastName,
-                   ModlDir,FastDir,version=7,verbose=0,
+def WriteFastADOne(TurbName,WindPath,FastName,ModlDir,FastDir,
+                   version=7,verbose=0,
                    **kwargs):
     """ Write FAST and AeroDyn input files for specified wind file
     
