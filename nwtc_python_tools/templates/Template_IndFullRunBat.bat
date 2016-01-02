@@ -5,6 +5,8 @@
 
 @NET USE A:    "{:s<BatDir>}"    /persistent:no
 @SET MESSFILE="A:\\Messages\{:s<IndFullRunBatMsgName>}"
+@ECHO Mounting file servers.                                         >  %MESSFILE%
+@NET USE S:    "{:s<ExeDir>}"    /persistent:no >> %MESSFILE%
 
 @rem #mlb NET USE
 
@@ -67,42 +69,55 @@ FOR %%A in ("%CD%") DO SET RunDrive=%%~dA
 @ECHO  Creating TurbSim input file for FileID {:s<FileID>} >> %MESSFILE%
 @CALL "A:\\{:s<TurbSimInpBatName>}"
 @ECHO  FileID {:s<FileID>} TurbSimInp  ERRORLEVEL %ERRORLEVEL% >> %MESSFILE%
-   IF ERRORLEVEL 1 GOTO :ERROR1
+@IF %ERRORLEVEL% == 0 GOTO :NOTSINPERROR
+  @ECHO Error %ERRORLEVEL% while generating TurbSim input file!
+  @ECHO {:s<IndFullRunBatName>} job is terminating
+  @ECHO Error %ERRORLEVEL% while generating TurbSim input file! >> %MESSFILE%
+  @ECHO {:s<IndFullRunBatName>} job is terminating >> %MESSFILE%
+  @EXIT /B
+:NOTSINPERROR
 @ECHO TurbSim input file generated successfully.      >> %SMSSFILE%
 
 :: --- Run TurbSim ---
-:RUNTURBSIM
 @ECHO  Running TurbSim for FileID {:s<FileID>}
 @ECHO  Running TurbSim for FileID {:s<FileID>}>> %MESSFILE%
 @CALL "A:\\{:s<TurbSimBatName>}"
 @ECHO FileID {:s<FileID>} TurbSim ERRORLEVEL %ERRORLEVEL% >> %MESSFILE%
-   IF ERRORLEVEL 1 GOTO :ERROR1
+@IF %ERRORLEVEL% == 0 GOTO :NOTSERROR
+  @ECHO Error %ERRORLEVEL% while running TurbSim!
+  @ECHO {:s<IndFullRunBatName>} job is terminating
+  @ECHO Error %ERRORLEVEL% while running TurbSim! >> %MESSFILE%
+  @ECHO {:s<IndFullRunBatName>} job is terminating >> %MESSFILE%
+  @EXIT /B
+:NOTSERROR
 @ECHO TurbSim run successfully.      >> %SMSSFILE%
    
 :: --- Create FAST input file ---
-:FASTINP
 @ECHO  Creating FAST input file for FileID {:s<FileID>}
 @ECHO  Creating FAST input file for FileID {:s<FileID>} >> %MESSFILE%
 @CALL "A:\\{:s<FastInpBatName>}"
 @ECHO  FileID {:s<FileID>} FastInp ERRORLEVEL %ERRORLEVEL% >> %MESSFILE%
-   IF ERRORLEVEL 1 GOTO :ERROR1
+@IF %ERRORLEVEL% == 0 GOTO :NOFSINPERROR
+  @ECHO Error %ERRORLEVEL% while generating FAST input file!
+  @ECHO {:s<IndFullRunBatName>} job is terminating
+  @ECHO Error %ERRORLEVEL% while generating FAST input file! >> %MESSFILE%
+  @ECHO {:s<IndFullRunBatName>} job is terminating >> %MESSFILE%
+  @EXIT /B
+:NOFSINPERROR
 @ECHO FAST input file generated successfully.      >> %SMSSFILE%
    
 :: --- Run FAST ---
-:RUNFAST
 @ECHO  Running FAST for FileID {:s<FileID>}
 @ECHO  Running FAST for FileID {:s<FileID>} >> %MESSFILE%
 @CALL "A:\\{:s<FastBatName>}"
 @ECHO  FileID {:s<FileID>} Fast ERRORLEVEL %ERRORLEVEL% >> %MESSFILE%
-	IF ERRORLEVEL 1 GOTO :ERROR1
+@IF %ERRORLEVEL% == 0 GOTO :NOFSERROR
+  @ECHO Error %ERRORLEVEL% while running FAST!
+  @ECHO {:s<IndFullRunBatName>} job is terminating
+  @ECHO Error %ERRORLEVEL% while running FAST! >> %MESSFILE%
+  @ECHO {:s<IndFullRunBatName>} job is terminating >> %MESSFILE%
+  @EXIT /B
+:NOFSERROR
 @ECHO Fast run successfully.      >> %SMSSFILE%
-GOTO :ENDSIMS
-   
-:ERROR1 
-@ECHO   ==( {:s<IndFullRunBatName>} failed )==
-@ECHO   ==( Halting simulations )==
-@ECHO   ==( {:s<IndFullRunBatName>} failed )== >> %SMSSFILE%
-@ECHO   ==( Halting simulations )== >> %SMSSFILE%
 
-:ENDSIMS
 @ECHO This job ran on: %HostName% finishing at %Date% %Time%
