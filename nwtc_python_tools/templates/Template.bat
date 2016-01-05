@@ -51,3 +51,6 @@ FOR %%A in ("%CD%") DO SET RunDrive=%%~dA
 
 @ECHO This job ran on: %HostName% finishing at %Date% %Time%
 
+:: Create temporary file to track status (indicates simulation complete)
+@ECHO "Wait file" >> {:s<TempFilePath>}
+
